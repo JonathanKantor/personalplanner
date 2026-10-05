@@ -15,6 +15,18 @@ import from .screens.Today { TodayScreen }
 def:pub app -> JsxElement {
     has logged_in: bool = jacIsLoggedIn();
 
+    # On a phone the saved login token is read from secure storage
+    # asynchronously, so the first check above can say "logged out". Wait for
+    # the runtime to finish loading it, then check again. (In a browser the
+    # promise doesn't exist and this simply re-checks.)
+    async can with entry {
+        ready: any = globalThis.__jacPlatformReady__;  # jac:ignore[E1032]
+        if ready {
+            await ready;
+        }
+        logged_in = jacIsLoggedIn();
+    }
+
     def logout {
         jacLogout();                        # synchronous; clears the stored token
         logged_in = False;

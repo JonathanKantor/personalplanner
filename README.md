@@ -96,13 +96,28 @@ On a real phone: install **Expo Go**, put the phone on the same Wi-Fi as the
 laptop, then (the setup step needs ~0.5 GB of disk for the Expo install)
 
 ```bash
-jac setup mobile          # one-time Expo scaffold into .jac/mobile-rn/
-jac run --dev mobile      # prints a QR code; scan it with Expo Go
+jac setup mobile                    # one-time Expo scaffold into .jac/mobile-rn/
+bash scripts/fix_mobile_native.sh   # one-time jac 0.37.14 workaround (see below)
+jac run --dev mobile                # prints a QR code; scan it with Expo Go
 ```
+
+Use `--dev`. Plain `jac run mobile` builds and installs a native Android APK,
+which needs the Android SDK and a JDK ("Invalid or corrupt jarfile ...
+gradle-wrapper.jar" means the Android toolchain isn't set up). Expo Go
+doesn't need any of that.
+
+**Workaround for phones:** in jac 0.37.14 the native runtime that Metro uses
+is missing `useJacState`, which the compiler emits for every component's `has`
+state, so every screen crashes in Expo Go with "TypeError: undefined is not a
+function". `scripts/fix_mobile_native.sh` points Metro's `@jac/runtime` at
+`mobile/native-fix/jac_runtime_shim.js`, which re-exports the native runtime
+and adds `useJacState` (copied from the browser runtime). Re-run it if you
+delete `.jac/mobile-rn`, and restart `jac run --dev mobile` after running it.
 
 `--dev` detects your laptop's LAN address and points the app at it (Metro on
 :8081, API on :8000; override with `JAC_RN_DEV_HOST=<ip>`). Verified here: the
-Expo setup and dev server start. Not verified: an actual phone connecting.
+Expo setup, the dev server, and that Metro's iOS bundle includes the fix. Not
+verified here: the app running on a phone.
 Campus Wi-Fi often blocks device-to-device connections; a phone hotspot or
 home network avoids that. Native iOS/Android builds need Xcode / the Android SDK.
 
@@ -263,6 +278,7 @@ web/              the web app; its main.jac registers every endpoint
   lib/ui.jac        error-message and time helpers
   styles/global.css
 mobile/           the phone app (mobUI): main.jac, screens/, components/, theme.jac, lib.jac
+  native-fix/       runtime shim for phones (see "Workaround for phones")
 cli/              the `plan` command (talks to the server over HTTP)
   api.jac           HTTP calls + login token storage
   commands.jac      one function per command
@@ -310,7 +326,8 @@ tests/            end-to-end endpoint tests
   expose to the browser. Development mode (`jac run`) is unaffected. Fix
   options: switch the web pages to walkers (like the mobile app), or make the
   endpoints `def:pub` with an explicit "must be logged in" check.
-- The phone (Expo Go) path starts correctly but hasn't been tried on a device.
+- The phone (Expo Go) path needs `scripts/fix_mobile_native.sh` (jac 0.37.14
+  native runtime bug) and hasn't yet been confirmed on a device.
 - In dev mode, server errors include a Python traceback in the response
   (`details`); the apps only show the message.
 
