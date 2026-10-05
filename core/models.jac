@@ -283,7 +283,10 @@ obj DayItem {
         status: str = "",          # blocks: "suggested" | "accepted"
         reason: str = "",
         task_id: str = "",
-        editable: bool = False;    # events: one of your own (can be edited / dragged)
+        editable: bool = False,    # events: one of your own (can be edited / dragged)
+        course: str = "",          # blocks/deadlines: the task's course or category
+        due_day: str = "",         # blocks/deadlines: weekday the task is due, e.g. "Wed"
+        done: bool = False;        # blocks/deadlines: the task is finished
 }
 
 obj DayView {

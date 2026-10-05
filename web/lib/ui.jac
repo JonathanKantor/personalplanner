@@ -62,3 +62,41 @@ def:pub today_label(tz: str) -> str {
     d: any = new(Date);  # jac:ignore[E1053]
     return d.toLocaleDateString("en-US", {"weekday": "short", "month": "short", "day": "numeric", "timeZone": tz});
 }
+
+"""Minutes past midnight -> 12-hour time without am/pm: 810 -> "1:30", 600 -> "10:00"."""
+def:pub clock12(minutes: int) -> str {
+    h = (minutes // 60) % 12;
+    m = minutes % 60;
+    return str(12 if h == 0 else h) + ":" + ("0" if m < 10 else "") + str(m);
+}
+
+"""A time range like the calendar shows it: "10:30 – 11:30"."""
+def:pub time_range(start_min: int, end_min: int) -> str {
+    return clock12(start_min) + " – " + clock12(end_min);
+}
+
+"""Hour label for the calendar gutter: 480 -> "8AM", 780 -> "1PM"."""
+def:pub hour_label(minutes: int) -> str {
+    h = minutes // 60;
+    return str(12 if h % 12 == 0 else h % 12) + ("AM" if h < 12 or h == 24 else "PM");
+}
+
+"""A timezone's everyday name, e.g. "America/Detroit" -> "Eastern Time"."""
+def:pub tz_name(tz: str) -> str {
+    try {
+        fmt: any = new(Intl.DateTimeFormat, "en-US", {"timeZone": tz, "timeZoneName": "longGeneric"});  # jac:ignore[E1053,E1032]
+        for part in fmt.formatToParts(new(Date)) {  # jac:ignore[E1053]
+            if part.type == "timeZoneName" {
+                return part.value;
+            }
+        }
+    } except Exception {}
+    return tz;
+}
+
+"""Minutes past midnight right now in timezone `tz`."""
+def:pub now_minutes(tz: str) -> int {
+    d: any = new(Date);  # jac:ignore[E1053]
+    parts: any = d.toLocaleTimeString("en-GB", {"timeZone": tz, "hour": "2-digit", "minute": "2-digit", "hour12": False}).split(":");
+    return int(parts[0]) * 60 + int(parts[1]);
+}

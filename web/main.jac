@@ -36,6 +36,7 @@ import from core.seed { seed_demo_data }
 import ".styles.tokens.css";        # design tokens: the one place values live
 import ".styles.global.css";
 import ".styles.components.css";    # kit + shell styles
+import ".styles.calendar.css";      # calendar card, grid, blocks, agenda
 
 def:pub app(children: any) -> JsxElement {
     <>{children}</>

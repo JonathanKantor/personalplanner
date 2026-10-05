@@ -11,7 +11,7 @@ import from core.models { DayItem, DayView, WeekView, TaskView, Preferences }
 import from core.timeutil { now_utc, from_iso, zone, parse_hhmm, week_start }
 import from core.preferences { _prefs }
 import from core.scheduler { clock }
-import from core.planner { _agenda }
+import from core.planner { _agenda, _tasks }
 
 def _minutes(dt: datetime) -> int {
     return dt.hour * 60 + dt.minute;
@@ -33,8 +33,20 @@ def _days(first: date, days: int, p: Preferences) -> list[DayView] {
     by_day: dict[date, list[DayItem]] = {first + timedelta(days=i): [] for i in range(days)};
     due_by_day: dict[date, list[TaskView]] = {d: [] for d in by_day};
 
+    # Task details for blocks and deadlines (course, due weekday, done).
+    tasks = {jid(t): t for t in _tasks()};
+
     def add(kind: str, id: str, title: str, s_iso: str, e_iso: str, all_day: bool,
             status: str = "", reason: str = "", task_id: str = "", editable: bool = False) -> None {
+        course = "";
+        due_day = "";
+        done = False;
+        if task_id in tasks {
+            t = tasks[task_id];
+            course = t.category;
+            due_day = from_iso(t.due).astimezone(tz).strftime("%a");
+            done = str(t.status) == "done";
+        }
         s = from_iso(s_iso).astimezone(tz);
         e = from_iso(e_iso).astimezone(tz);
         day = s.date();
@@ -46,7 +58,8 @@ def _days(first: date, days: int, p: Preferences) -> list[DayView] {
                 start_label="all day" if all_day else clock(s),
                 end_label="" if all_day else clock(e),
                 start_min=0 if all_day else _minutes(s), end_min=24 * 60 if all_day else end_min,
-                status=status, reason=reason, task_id=task_id, editable=editable
+                status=status, reason=reason, task_id=task_id, editable=editable,
+                course=course, due_day=due_day, done=done
             )];
         }
     }
@@ -62,6 +75,9 @@ def _days(first: date, days: int, p: Preferences) -> list[DayView] {
         if d in due_by_day {
             due_by_day[d] = due_by_day[d] + [t];
         }
+        # A deadline is a zero-length item at the due time; the web grid draws
+        # it as a small coral block ending there.
+        add("deadline", "due-" + t.id, t.title, t.due, t.due, False, task_id=t.id);
     }
 
     out: list[DayView] = [];

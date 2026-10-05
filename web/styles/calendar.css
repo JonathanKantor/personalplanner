@@ -1,0 +1,154 @@
+/* Calendar card: toolbar, week grid, event blocks, agenda, legend.
+   All values come from tokens.css. */
+
+.cal-card { overflow: hidden; }
+
+/* ---------------------------------------------------------------- toolbar */
+.cal-toolbar {
+  display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border);
+}
+.ui-iconbtn.square {
+  width: var(--space-8); height: var(--space-8); border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+}
+.cal-range { font-weight: var(--weight-semibold); font-size: var(--text-md); padding: 0 var(--space-1); }
+.cal-year { color: var(--color-text-subtle); font-weight: var(--weight-regular); }
+.segmented {
+  display: inline-flex; padding: 2px; gap: 2px; border-radius: var(--radius-control);
+  background: var(--color-surface-sunken); border: 1px solid var(--color-border);
+}
+.seg {
+  display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-3);
+  border: none; border-radius: var(--radius-block); background: transparent; cursor: pointer;
+  font-size: var(--text-sm); color: var(--color-text-muted);
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+.seg.on { background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-card); font-weight: var(--weight-medium); }
+
+/* ---------------------------------------------------------------- grid */
+.cal-grid { display: grid; grid-template-columns: var(--gutter-width) repeat(7, minmax(0, 1fr)); }
+.cal-corner { border-bottom: 1px solid var(--color-border); }
+.cal-dayhead {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-1);
+  padding: var(--space-3) var(--space-1) var(--space-2);
+  border-left: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);
+  min-height: var(--dayhead-height);
+}
+.cal-weekday {
+  font-size: var(--text-2xs); font-weight: var(--weight-semibold); text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow); color: var(--color-text-subtle);
+}
+.cal-daynum {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--space-6); height: var(--space-6); border-radius: var(--radius-pill);
+  font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--color-text);
+}
+.cal-dayhead.today .cal-weekday { color: var(--color-accent); }
+.cal-dayhead.today .cal-daynum { background: var(--color-accent); color: var(--color-on-accent); }
+.cal-dayhead.off .cal-daynum { color: var(--color-text-muted); }
+.cal-allday {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--text-2xs); padding: 1px var(--space-2); border-radius: var(--radius-pill);
+  background: var(--event-bg); color: var(--event-text);
+}
+
+.cal-gutter { position: relative; }
+.cal-hour {                                  /* centred on its gridline, right-aligned */
+  position: absolute; right: var(--space-2); transform: translateY(-50%);
+  font-size: var(--text-2xs); color: var(--color-text-subtle); letter-spacing: 0.02em;
+}
+.cal-col {
+  position: relative; border-left: 1px solid var(--color-border);
+  background-image: repeating-linear-gradient(to bottom,
+    var(--color-gridline) 0, var(--color-gridline) 1px, transparent 1px, transparent var(--hour));
+}
+.cal-col.off { background-color: var(--color-surface-sunken); }
+.cal-col.drop { background-color: var(--color-accent-tint); }
+
+.cal-now {                                   /* current time: line + dot at the left edge */
+  position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid var(--color-accent);
+  z-index: 3; pointer-events: none;
+}
+.cal-now::before {
+  content: ""; position: absolute; left: -4px; top: -4px; width: var(--space-2); height: var(--space-2);
+  border-radius: var(--radius-pill); background: var(--color-accent);
+}
+
+/* ---------------------------------------------------------------- event blocks */
+.ev {
+  position: absolute; left: var(--space-1); right: var(--space-1); overflow: hidden;
+  border-radius: var(--radius-block); border-left: 2px solid transparent;
+  padding: var(--space-1) var(--space-2); font-size: var(--text-xs); line-height: 1.3;
+  transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out),
+              opacity var(--duration-fast) var(--ease-out);
+}
+.ev.class    { background: var(--class-bg);    border-left-color: var(--class-border);    color: var(--class-text); }
+.ev.event    { background: var(--event-bg);    border-left-color: var(--event-border);    color: var(--event-text); }
+.ev.deadline { background: var(--deadline-bg); border-left-color: var(--deadline-border); color: var(--deadline-text); }
+.ev.focus    { background: var(--focus-bg);    border-left-color: var(--focus-border);    color: var(--focus-text); }
+.ev.suggested { border: 1px dashed var(--focus-border); border-left: 2px dashed var(--focus-border); }
+.ev.clickable { cursor: pointer; }
+.ev.movable { cursor: grab; }
+.ev.clickable:hover { transform: translateY(-1px); box-shadow: var(--shadow-lift); }
+.ev.dragging { opacity: .4; }
+.ev.done { opacity: .55; }
+.ev.done .ev-title { text-decoration: line-through; }
+.ev.ghost {
+  background: transparent; border: 2px dashed var(--color-accent); color: var(--color-accent);
+  pointer-events: none; font-weight: var(--weight-semibold); z-index: 4;
+}
+
+.ev-body { position: relative; height: 100%; }
+.ev-title {
+  font-weight: var(--weight-semibold); padding-right: var(--space-5);
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.ev-body.compact .ev-title { white-space: nowrap; display: block; }
+.ev-sub { opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.ev.suggested .ev-title { padding-right: var(--block-actions); }
+
+.ev-check {                                  /* round "mark done" checkbox, top right */
+  position: absolute; top: 0; right: 0; display: inline-flex; align-items: center; justify-content: center;
+  width: var(--space-4); height: var(--space-4); border-radius: var(--radius-pill); padding: 0;
+  border: 1.5px solid currentColor; background: var(--color-surface); color: inherit; cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+.ev-check.on { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent); }
+.ev-acts { position: absolute; top: 0; right: 0; display: flex; gap: 2px; }
+.ev-acts button {
+  display: inline-flex; align-items: center; justify-content: center; width: var(--space-5); height: var(--space-5);
+  border: none; border-radius: var(--radius-block); background: var(--color-surface); color: inherit; cursor: pointer; padding: 0;
+}
+
+/* ---------------------------------------------------------------- agenda */
+.agenda { padding: var(--space-2) var(--space-4) var(--space-4); }
+.agenda-day { padding: var(--space-3) 0; border-bottom: 1px solid var(--color-border); }
+.agenda-day:last-child { border-bottom: none; }
+.agenda-dayhead { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-2); font-size: var(--text-md); }
+.agenda-day.today .cal-weekday { color: var(--color-accent); }
+.agenda-day.today .cal-daynum { background: var(--color-accent); color: var(--color-on-accent); }
+.agenda-row { position: relative; left: auto; right: auto; margin-bottom: var(--space-2); cursor: pointer; }
+.agenda-empty { margin: 0; font-size: var(--text-sm); color: var(--color-text-subtle); }
+
+/* ---------------------------------------------------------------- legend + loading */
+.cal-legend {
+  display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border); font-size: var(--text-xs); color: var(--color-text-muted);
+}
+.sw::before {
+  content: ""; display: inline-block; width: var(--space-2); height: var(--space-2); border-radius: 2px;
+  margin-right: var(--space-2); vertical-align: 0;
+}
+.sw.class::before    { background: var(--class-border); }
+.sw.deadline::before { background: var(--deadline-border); }
+.sw.focus::before    { background: var(--focus-border); }
+
+.cal-skeleton {
+  height: calc(var(--hour) * 12); margin: var(--space-4);
+  border-radius: var(--radius-block); background: linear-gradient(90deg,
+    var(--color-surface-sunken) 0%, var(--color-bg) 50%, var(--color-surface-sunken) 100%);
+  background-size: 200% 100%; animation: shimmer 1.4s var(--ease-out) infinite;
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .cal-skeleton { animation: none; } }

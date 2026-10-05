@@ -91,6 +91,9 @@ def tool_schedule(start_date: str, days: int) -> str {
         view = get_day_view((d + timedelta(days=i)).isoformat());
         lines.append(view.label + (" (day off)" if view.is_day_off else "") + ":");
         for it in view.items {
+            if it.kind == "deadline" {
+                continue;                    # listed below as DUE
+            }
             what = "class" if it.kind == "class" else ("event" if it.kind == "event" else f"{it.status} block [block_id={it.id}] for task [task_id={it.task_id}]");
             lines.append(f"  {it.start_label}-{it.end_label} {what}: {it.title}");
         }

@@ -165,9 +165,9 @@ def:pub TodayScreen(onLogout: Callable[[], None]) -> JsxElement {
                     onAccept={lambda (id: str) { decide(id, True); }}
                     onReject={lambda (id: str) { decide(id, False); }}
                     onFinish={lambda (id: str) { finish_task(id); }}/>
-                  for it in view.items if not it.all_day]}
+                  for it in view.items if not it.all_day and it.kind != "deadline"]}
             </View>
-        ) if view and any(not it.all_day for it in view.items) else (
+        ) if view and any(not it.all_day and it.kind != "deadline" for it in view.items) else (
             <View style={{"gap": S.sm}}>
                 <Text style={styles.empty}>{"Loading..." if not view else "Nothing scheduled. Tap Plan to fit your tasks in."}</Text>
                 {(<Button label="Load demo data" variant="secondary" onPress={load_demo}/>) if view else <View/>}

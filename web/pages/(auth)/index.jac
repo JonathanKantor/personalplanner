@@ -9,13 +9,15 @@ import from core.views { get_week_view }
 import from core.planning { suggest_schedule, accept_block, reject_block, accept_all, adjust_block }
 import type from core.models { WeekView, PlanView, DayItem }
 import from ...components.WeekGrid { WeekGrid }
+import from ...components.AgendaList { AgendaList }
+import from core.tasks { complete_task, update_task }
 import from ...components.TaskEditor { TaskEditor }
 import from ...components.EventEditor { EventEditor }
 import from ...components.PageHeader { PageHeader }
-import from ...components.kit { Button, Card, Icon }
+import from ...components.kit { Button, Card, Icon, IconButton }
 import from core.events { update_event }
 import from core.planning { clear_suggestions }
-import from ...lib.ui { error_text, hhmm }
+import from ...lib.ui { error_text, hhmm, tz_name }
 
 def:pub WeekPage() -> JsxPage {
     has week: WeekView | None = None,
@@ -32,7 +34,8 @@ def:pub WeekPage() -> JsxPage {
         event_open: bool = False,
         event_item: DayItem | None = None,
         event_date: str = "",
-        adding_task: bool = False;           # "+ Add task" dialog open
+        adding_task: bool = False,           # "+ Add task" dialog open
+        view: str = "week";                  # "week" grid or "agenda" list
 
     async def load {
         try {
@@ -157,6 +160,21 @@ def:pub WeekPage() -> JsxPage {
         await finish();
     }
 
+    """Round checkbox on a work/deadline block: finish the task (or un-finish it)."""
+    async def toggle_done(task_id: str, done: bool) {
+        begin();
+        try {
+            if done {
+                await update_task(task_id, {"status": "todo"});
+            } else {
+                await complete_task(task_id);
+            }
+        } except Exception as e {
+            error = error_text(e);
+        }
+        await finish();
+    }
+
     async def clear_all {
         begin();
         notice = "";
@@ -170,6 +188,10 @@ def:pub WeekPage() -> JsxPage {
         await finish();
     }
 
+    tz = week.timezone if week else "America/Detroit";
+    year = week.start[0:4] if week else "";
+    range_label = week.label.replace(" - ", " – ") if week else "";
+
     <div>
         <PageHeader eyebrow="Your week, in rhythm" title="A little more room to think."
                     subtitle="Classes, deadlines, and the time between them — all in one place.">
@@ -178,74 +200,61 @@ def:pub WeekPage() -> JsxPage {
                     onClick={lambda (e: MouseEvent) { open_event(None, today_or_monday()); }} />
         </PageHeader>
 
-        <div className="planner-layout">
-        <div className="planner-main">
-        <div className="week-head">
-            <h1>{week.label if week else "Week"}</h1>
-            <button className="btn" onClick={prev_week} disabled={not week}>‹ Prev</button>
-            <button className="btn" onClick={lambda (e: MouseEvent) { start = ""; }}>This week</button>
-            <button className="btn" onClick={next_week} disabled={not week}>Next ›</button>
-            <span className="spacer"></span>
-            <button id="suggest" className="btn primary" onClick={suggest} disabled={busy}>Suggest schedule</button>
-            {week and week.suggested_count > 0 and
-                <button id="accept-all" className="btn" onClick={accept_everything} disabled={busy}>Accept all ({week.suggested_count})</button>}
-            {week and week.suggested_count > 0 and
-                <button id="clear-suggestions" className="btn" onClick={clear_all} disabled={busy}>Clear suggestions</button>}
-        </div>
-        <div className="legend" style={{"marginBottom": "var(--space-2)"}}>
-            <span className="l-class">Class</span><span className="l-event">Event</span>
-            <span className="l-plan">Planned</span><span className="l-suggest">Suggested</span>
-            {week and <span>Times in {week.timezone}</span>}
-        </div>
-
         {error and <div className="error">{error}</div>}
         {notice and <div className="notice">{notice}</div>}
 
-        {if plan and len(plan.unscheduled) > 0 {
-            <div className="panel">
-                <h2>Couldn't fully schedule</h2>
-                <ul className="list unscheduled">
-                    {for u in plan.unscheduled {
-                        <li key={u.task_id}><b>{u.title}</b>: {u.reason}</li>
-                    }}
-                </ul>
-            </div>
-        }}
+        <div className="planner-layout">
+        <div className="planner-main">
+            <Card className="cal-card">
+                <div className="cal-toolbar">
+                    <IconButton icon="chevron-left" label="Previous week" className="square" onClick={prev_week} />
+                    <span className="cal-range">{range_label} <span className="cal-year num">{year}</span></span>
+                    <IconButton icon="chevron-right" label="Next week" className="square" onClick={next_week} />
+                    <Button label="Today" small={True} onClick={lambda (e: MouseEvent) { start = ""; }} />
+                    <span className="spacer"></span>
+                    {(week and week.suggested_count > 0) and
+                        <Button id="accept-all" label={"Accept all (" + str(week.suggested_count) + ")"} small={True} onClick={lambda (e: MouseEvent) { accept_everything(); }} disabled={busy} />}
+                    {(week and week.suggested_count > 0) and
+                        <Button id="clear-suggestions" label="Clear" variant="ghost" small={True} onClick={lambda (e: MouseEvent) { clear_all(); }} disabled={busy} />}
+                    <Button id="suggest" label="Suggest schedule" icon="sparkles" small={True} onClick={lambda (e: MouseEvent) { suggest(); }} disabled={busy} />
+                    <div className="segmented" role="tablist" aria-label="Calendar view">
+                        <button type="button" role="tab" aria-selected={view == "week"} className={"seg" + (" on" if view == "week" else "")}
+                            onClick={lambda (e: MouseEvent) { view = "week"; }}><Icon name="grid" size={14} /> Week</button>
+                        <button type="button" role="tab" aria-selected={view == "agenda"} className={"seg" + (" on" if view == "agenda" else "")}
+                            onClick={lambda (e: MouseEvent) { view = "agenda"; }}><Icon name="list" size={14} /> Agenda</button>
+                    </div>
+                </div>
 
-        {week and <WeekGrid week={week} onAccept={accept} onReject={reject}
-                             onOpen={open_editor} onOpenEvent={lambda (it: DayItem, day: str) { open_event(it, day); }}
-                             onMove={move_item} />}
+                {if not week {
+                    <div className="cal-skeleton" aria-label="Loading"></div>
+                } elif view == "week" {
+                    <WeekGrid week={week} tz={tz} onAccept={accept} onReject={reject} onToggleDone={toggle_done}
+                        onOpen={open_editor} onOpenEvent={lambda (it: DayItem, day: str) { open_event(it, day); }}
+                        onMove={move_item} />
+                } else {
+                    <AgendaList week={week} onAccept={accept} onReject={reject} onToggleDone={toggle_done}
+                        onOpen={open_editor} onOpenEvent={lambda (it: DayItem, day: str) { open_event(it, day); }} />
+                }}
 
-        {event_open and <EventEditor day={event_date} item={event_item}
-                onClose={lambda { event_open = False; }}
-                onChanged={lambda (msg: str) { notice = msg; load(); }} />}
+                <div className="cal-legend">
+                    <span className="sw class">Class</span>
+                    <span className="sw deadline">Deadline</span>
+                    <span className="sw focus">Focus time</span>
+                    <span className="spacer"></span>
+                    <span>Times in {tz_name(tz)}</span>
+                </div>
+            </Card>
 
-        {open_task and week and <TaskEditor taskId={open_task} tz={week.timezone}
-                block={open_block} blockDate={open_date}
-                onClose={lambda { open_task = ""; }} onChanged={lambda { load(); }} />}
-
-        {if week and week.suggested_count > 0 {
-            <div className="panel" style={{"marginTop": "var(--space-4)"}}>
-                <h2>Suggestions</h2>
-                <ul className="list">
-                    {for d in week.days {
-                        for it in d.items {
-                            if it.status == "suggested" {
-                                <li key={it.id}>
-                                    <div className="grow">
-                                        <div><b>{it.title}</b> · {d.label} {it.start_label}-{it.end_label}</div>
-                                        <div className="reason">{it.reason}</div>
-                                    </div>
-                                    <button className="btn small primary" onClick={lambda (e: MouseEvent) { accept(it.id); }}>Accept</button>
-                                    <button className="btn small" onClick={lambda (e: MouseEvent) { open_editor(it.task_id, it, d.date); }}>Adjust</button>
-                                    <button className="btn small danger" onClick={lambda (e: MouseEvent) { reject(it.id); }}>Reject</button>
-                                </li>
-                            }
-                        }
-                    }}
-                </ul>
-            </div>
-        }}
+            {if plan and len(plan.unscheduled) > 0 {
+                <Card className="side-card mt-4">
+                    <div className="side-card-head">Couldn't fully schedule</div>
+                    <ul className="list unscheduled">
+                        {for u in plan.unscheduled {
+                            <li key={u.task_id}><b>{u.title}</b>: {u.reason}</li>
+                        }}
+                    </ul>
+                </Card>
+            }}
         </div>
         <aside className="planner-side" aria-label="Coming up">
             <Card className="side-card">
@@ -254,6 +263,14 @@ def:pub WeekPage() -> JsxPage {
             </Card>
         </aside>
         </div>
+
+        {open_task and week and <TaskEditor taskId={open_task} tz={week.timezone}
+                block={open_block} blockDate={open_date}
+                onClose={lambda { open_task = ""; }} onChanged={lambda { load(); }} />}
+
+        {event_open and <EventEditor day={event_date} item={event_item}
+                onClose={lambda { event_open = False; }}
+                onChanged={lambda (msg: str) { notice = msg; load(); }} />}
 
         {adding_task and week and <TaskEditor taskId="" tz={week.timezone}
                 onClose={lambda { adding_task = False; }} onChanged={lambda { load(); }} />}
