@@ -186,7 +186,8 @@ obj EventView {
         start: str,
         end: str,
         all_day: bool,
-        is_class: bool;
+        is_class: bool,
+        editable: bool = False;                   # True for your own events ("My events")
 }
 
 """A recurring series, so the user can mark e.g. "EECS 376 Lecture" as a class."""
@@ -277,7 +278,8 @@ obj DayItem {
         end_min: int,
         status: str = "",          # blocks: "suggested" | "accepted"
         reason: str = "",
-        task_id: str = "";
+        task_id: str = "",
+        editable: bool = False;    # events: one of your own (can be edited / dragged)
 }
 
 obj DayView {

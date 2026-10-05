@@ -269,6 +269,23 @@ def cmd_move(args: any) -> None {
     print(f"Moved and accepted: {b['task_title']} {_when(b['start'], tz)}-{_hm(b['end'], tz)}");
 }
 
+def cmd_clear(args: any) -> None {
+    n = call("clear_suggestions");
+    print(f"Cleared {n} suggestion(s). Planned blocks are unchanged.");
+}
+
+def cmd_event(args: any) -> None {
+    tz = _tz();
+    day = resolve_due(args.date, tz)[:10];
+    r = call("create_event", title=args.title, day=day, start=args.start, end=args.end,
+             is_class=bool(args.is_class), repeat_weeks=args.weeks);
+    first = r["events"][0];
+    print(f"Added {len(r['events'])} event(s): {first['title']} {_when(first['start'], tz)}-{_hm(first['end'], tz)}");
+    for c in r["conflicts"] {
+        print(f"  ! overlaps your planned block: {c}");
+    }
+}
+
 def cmd_today(args: any) -> None {
     tz = _tz();
     a = call("get_today");

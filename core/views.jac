@@ -34,7 +34,7 @@ def _days(first: date, days: int, p: Preferences) -> list[DayView] {
     due_by_day: dict[date, list[TaskView]] = {d: [] for d in by_day};
 
     def add(kind: str, id: str, title: str, s_iso: str, e_iso: str, all_day: bool,
-            status: str = "", reason: str = "", task_id: str = "") -> None {
+            status: str = "", reason: str = "", task_id: str = "", editable: bool = False) -> None {
         s = from_iso(s_iso).astimezone(tz);
         e = from_iso(e_iso).astimezone(tz);
         day = s.date();
@@ -46,13 +46,13 @@ def _days(first: date, days: int, p: Preferences) -> list[DayView] {
                 start_label="all day" if all_day else clock(s),
                 end_label="" if all_day else clock(e),
                 start_min=0 if all_day else _minutes(s), end_min=24 * 60 if all_day else end_min,
-                status=status, reason=reason, task_id=task_id
+                status=status, reason=reason, task_id=task_id, editable=editable
             )];
         }
     }
 
     for ev in agenda.events {
-        add("class" if ev.is_class else "event", ev.id, ev.title, ev.start, ev.end, ev.all_day);
+        add("class" if ev.is_class else "event", ev.id, ev.title, ev.start, ev.end, ev.all_day, editable=ev.editable);
     }
     for b in agenda.blocks {
         add("block", b.id, b.task_title, b.start, b.end, False, b.status, b.reason, b.task_id);

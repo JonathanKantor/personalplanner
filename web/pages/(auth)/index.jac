@@ -10,6 +10,9 @@ import from core.planning { suggest_schedule, accept_block, reject_block, accept
 import type from core.models { WeekView, PlanView, DayItem }
 import from ...components.WeekGrid { WeekGrid }
 import from ...components.TaskEditor { TaskEditor }
+import from ...components.EventEditor { EventEditor }
+import from core.events { update_event }
+import from core.planning { clear_suggestions }
 import from ...lib.ui { error_text, hhmm }
 
 def:pub WeekPage() -> JsxPage {
@@ -22,7 +25,11 @@ def:pub WeekPage() -> JsxPage {
         # the task open in the editor ("" = closed), and the block it was opened from
         open_task: str = "",
         open_block: DayItem | None = None,
-        open_date: str = "";
+        open_date: str = "",
+        # the event editor: open, the event (None = new) and its date
+        event_open: bool = False,
+        event_item: DayItem | None = None,
+        event_date: str = "";
 
     async def load {
         try {
@@ -108,15 +115,52 @@ def:pub WeekPage() -> JsxPage {
         open_date = day;
     }
 
-    """A block was dragged to `day` at start..end (minutes past midnight).
-    adjust_block saves it (and accepts it if it was a suggestion); the server
-    refuses moves onto classes, events or other planned blocks."""
-    async def move_block(id: str, day: str, start_min: int, end_min: int) {
+    def open_event(item: DayItem | None, day: str) {
+        event_item = item;
+        event_date = day;
+        event_open = True;
+    }
+
+    def today_or_monday -> str {
+        if week {
+            for d in week.days {
+                if d.is_today { return d.date; }
+            }
+            return week.start;
+        }
+        return "";
+    }
+
+    """Something was dragged to `day` at start..end (minutes past midnight).
+    Blocks: adjust_block saves it (and accepts a suggestion); the server refuses
+    moves onto classes, events or other planned blocks. Your own events:
+    update_event moves just that occurrence."""
+    async def move_item(id: str, kind: str, day: str, start_min: int, end_min: int) {
         begin();
         notice = "";
         try {
-            b = await adjust_block(id, day + "T" + hhmm(start_min), day + "T" + hhmm(end_min));
-            notice = "Moved " + b.task_title + " to " + hhmm(start_min) + ".";
+            if kind == "block" {
+                b = await adjust_block(id, day + "T" + hhmm(start_min), day + "T" + hhmm(end_min));
+                notice = "Moved " + b.task_title + " to " + hhmm(start_min) + ".";
+            } else {
+                r = await update_event(id, {"day": day, "start": hhmm(start_min), "end": hhmm(end_min)});
+                notice = "Moved the event to " + hhmm(start_min) + "." + (
+                    (" It overlaps your planned " + ", ".join(r.conflicts) + ".") if len(r.conflicts) > 0 else ""
+                );
+            }
+        } except Exception as e {
+            error = error_text(e);
+        }
+        await finish();
+    }
+
+    async def clear_all {
+        begin();
+        notice = "";
+        try {
+            n = await clear_suggestions();
+            plan = None;
+            notice = "Cleared " + str(n) + " suggestion" + ("s" if n != 1 else "") + ". Your planned blocks are unchanged.";
         } except Exception as e {
             error = error_text(e);
         }
@@ -133,6 +177,9 @@ def:pub WeekPage() -> JsxPage {
             <button id="suggest" className="btn primary" onClick={suggest} disabled={busy}>Suggest schedule</button>
             {week and week.suggested_count > 0 and
                 <button id="accept-all" className="btn" onClick={accept_everything} disabled={busy}>Accept all ({week.suggested_count})</button>}
+            {week and week.suggested_count > 0 and
+                <button id="clear-suggestions" className="btn" onClick={clear_all} disabled={busy}>Clear suggestions</button>}
+            <button id="add-event" className="btn" onClick={lambda (e: MouseEvent) { open_event(None, today_or_monday()); }}>+ Add event</button>
         </div>
         <div className="legend" style={{"marginBottom": "8px"}}>
             <span className="l-class">Class</span><span className="l-event">Event</span>
@@ -155,7 +202,12 @@ def:pub WeekPage() -> JsxPage {
         }}
 
         {week and <WeekGrid week={week} onAccept={accept} onReject={reject}
-                             onOpen={open_editor} onMove={move_block} />}
+                             onOpen={open_editor} onOpenEvent={lambda (it: DayItem, day: str) { open_event(it, day); }}
+                             onMove={move_item} />}
+
+        {event_open and <EventEditor day={event_date} item={event_item}
+                onClose={lambda { event_open = False; }}
+                onChanged={lambda (msg: str) { notice = msg; load(); }} />}
 
         {open_task and week and <TaskEditor taskId={open_task} tz={week.timezone}
                 block={open_block} blockDate={open_date}

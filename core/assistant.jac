@@ -30,7 +30,8 @@ import from core.models { ChatThread, ChatMessage, ChatReply, AssistantStatus }
 import from core.timeutil { now_utc, to_iso, zone, local_label }
 import from core.preferences { _prefs, get_preferences, update_preferences }
 import from core.tasks { create_task, list_tasks, update_task, complete_task }
-import from core.planning { suggest_schedule, accept_block, reject_block, accept_all, adjust_block }
+import from core.planning { suggest_schedule, accept_block, reject_block, accept_all, adjust_block, clear_suggestions }
+import from core.events { create_event }
 import from core.views { get_day_view }
 
 # Checked against the Gemini API on 2026-10-05 (gemini-2.5-flash is retired
@@ -225,6 +226,31 @@ sem tool_move_block.block_id = "The block's id.";
 sem tool_move_block.start = "New start, local YYYY-MM-DDTHH:MM.";
 sem tool_move_block.end = "New end, local YYYY-MM-DDTHH:MM.";
 
+def tool_add_event(title: str, date: str, start: str, end: str, repeat_weeks: int) -> str {
+    try {
+        r = create_event(title, date, start, end, False, max(1, int(repeat_weeks)));
+    } except ValueError as e {
+        return "Error: " + str(e);
+    }
+    first = r.events[0];
+    _log(f"Added event \"{first.title}\" ({_when(first.start)}" + (f", weekly x{len(r.events)}" if len(r.events) > 1 else "") + ")");
+    note = (" WARNING: it overlaps planned blocks: " + ", ".join(r.conflicts)) if r.conflicts else "";
+    return f"Added {len(r.events)} event(s) starting {_when(first.start)}.{note}";
+}
+sem tool_add_event = "Add a fixed commitment the user tells you about (meeting, appointment, shift) to their calendar. The scheduler will plan around it.";
+sem tool_add_event.title = "Short title, e.g. 'Advisor meeting'.";
+sem tool_add_event.date = "Local date YYYY-MM-DD.";
+sem tool_add_event.start = "Start time HH:MM (24-hour).";
+sem tool_add_event.end = "End time HH:MM (24-hour).";
+sem tool_add_event.repeat_weeks = "1 for a one-off; N to repeat weekly N times.";
+
+def tool_clear_suggestions -> str {
+    n = clear_suggestions();
+    _log(f"Cleared {n} suggestion(s)");
+    return f"Cleared {n} suggested block(s); planned blocks are unchanged.";
+}
+sem tool_clear_suggestions = "Remove all pending suggested blocks (accepted/planned blocks stay).";
+
 def tool_preferences -> str {
     p = get_preferences();
     return json.dumps({
@@ -252,7 +278,7 @@ sem tool_set_preferences.changes_json = "JSON object of fields to change, e.g. {
 glob TOOLS: list = [
     tool_today, tool_schedule, tool_tasks, tool_add_task, tool_update_task,
     tool_complete_task, tool_plan, tool_accept, tool_reject, tool_move_block,
-    tool_preferences, tool_set_preferences
+    tool_add_event, tool_clear_suggestions, tool_preferences, tool_set_preferences
 ];
 
 glob SYSTEM: str = (

@@ -63,6 +63,21 @@ def:protect reject_block(id: str) -> BlockView {
     return _view(t, b);
 }
 
+"""Remove every pending suggestion (planned/accepted blocks are kept).
+Returns how many were removed. Press "Suggest schedule" to plan again."""
+def:protect clear_suggestions -> int {
+    removed = 0;
+    for t in _tasks() {
+        for b in _blocks(t) {
+            if b.status == BlockStatus.SUGGESTED {
+                del b;
+                removed += 1;
+            }
+        }
+    }
+    return removed;
+}
+
 def:protect accept_all -> list[BlockView] {
     out: list[BlockView] = [];
     for t in _tasks() {

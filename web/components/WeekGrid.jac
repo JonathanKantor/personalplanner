@@ -4,10 +4,11 @@ All positions come from minute offsets the server already computed in the
 user's timezone (core/views.jac), so this component does no date math.
 
 Interaction:
-- Click a planned/suggested block, or a "due:" label, to open its task.
-- Drag a planned/suggested block to another time or day (HTML drag-and-drop).
-  It snaps to 15 minutes and keeps its length; the parent saves the move.
-  Classes and calendar events are fixed and can't be dragged.
+- Click a planned/suggested block, or a "due:" label, to open its task; click
+  one of your own events ("My events") to edit it.
+- Drag a planned/suggested block or one of your own events to another time or
+  day (HTML drag-and-drop). It snaps to 15 minutes and keeps its length; the
+  parent saves the move. Synced (Google/iCal) events and classes are fixed.
 """
 
 import type from core.models { WeekView, DayView, DayItem }
@@ -21,11 +22,13 @@ def:pub WeekGrid(
     onAccept: Callable[[str], None],
     onReject: Callable[[str], None],
     onOpen: Callable[[str, DayItem | None, str], None],    # (task id, block or None, date)
-    onMove: Callable[[str, str, int, int], None]          # (block id, date, start min, end min)
+    onOpenEvent: Callable[[DayItem, str], None],           # (your event, date)
+    onMove: Callable[[str, str, str, int, int], None]     # (id, "block"|"event", date, start min, end min)
 ) -> JsxElement {
     # What is being dragged: block id, its length, and where on the block it
     # was grabbed (so the block doesn't jump under the pointer).
     has drag_id: str = "",
+        drag_kind: str = "",
         drag_len: int = 0,
         drag_grab: int = 0,
         drop_day: str = "",
@@ -55,7 +58,7 @@ def:pub WeekGrid(
 
     def box_class(it: DayItem) -> str {
         short = " short" if it.end_min - it.start_min < 45 else "";   # one-line layout
-        movable = " movable" if it.kind == "block" else "";
+        movable = " movable" if (it.kind == "block" or it.editable) else "";
         return "item " + (it.status if it.kind == "block" else it.kind) + short + movable;
     }
 
@@ -71,6 +74,7 @@ def:pub WeekGrid(
     def start_drag(e: any, it: DayItem) {
         rect: any = e.currentTarget.getBoundingClientRect();
         drag_id = it.id;
+        drag_kind = "block" if it.kind == "block" else "event";
         drag_len = it.end_min - it.start_min;
         drag_grab = Math.round((e.clientY - rect.top) * 60 / HOUR_PX);  # jac:ignore[E1001]
         e.dataTransfer.effectAllowed = "move";
@@ -90,7 +94,7 @@ def:pub WeekGrid(
         e.preventDefault();
         if drag_id {
             start = pointer_minute(e);
-            onMove(drag_id, day, start, start + drag_len);
+            onMove(drag_id, drag_kind, day, start, start + drag_len);
         }
         end_drag();
     }
@@ -141,12 +145,15 @@ def:pub WeekGrid(
                     if not it.all_day {
                         <div key={it.id} className={box_class(it) + (" dragging" if drag_id == it.id else "")}
                              style={box_style(it.start_min, it.end_min)}
-                             draggable={it.kind == "block"}
+                             draggable={it.kind == "block" or it.editable}
                              onDragStart={lambda (e: any) { start_drag(e, it); }}
                              onDragEnd={lambda (e: any) { end_drag(); }}
-                             onClick={lambda (e: MouseEvent) { if it.kind == "block" { onOpen(it.task_id, it, d.date); } }}
+                             onClick={lambda (e: MouseEvent) {
+                                 if it.kind == "block" { onOpen(it.task_id, it, d.date); }
+                                 elif it.editable { onOpenEvent(it, d.date); }
+                             }}
                              title={it.title + "\n" + it.start_label + "-" + it.end_label + ("\n" + it.reason if it.reason else "")
-                                    + ("\nClick to edit, drag to move" if it.kind == "block" else "")}>
+                                    + ("\nClick to edit, drag to move" if (it.kind == "block" or it.editable) else "")}>
                             <div className="t">{it.title}</div>
                             <div>{it.start_label}-{it.end_label}</div>
                             {if it.status == "suggested" {

@@ -128,3 +128,29 @@ test "chat requires login and a message" {
         client.close();
     }
 }
+
+test "the assistant can add a meeting and clear suggestions" {
+    client = _client();
+    try {
+        client.register_user("asst6", "password123");
+        _call(client, "seed_demo_data");
+        _call(client, "suggest_schedule", {"days": 7});
+        tomorrow = (datetime.now(ZoneInfo("America/Detroit")) + timedelta(days=1)).strftime("%Y-%m-%d");
+        _mock([
+            MockToolCall(tool=assistant.tool_add_event, args={
+                "title": "Advisor meeting", "date": tomorrow, "start": "15:00", "end": "16:00", "repeat_weeks": 1
+            }),
+            MockToolCall(tool=assistant.tool_clear_suggestions, args={}),
+            "Added the meeting and cleared the suggestions."
+        ]);
+        r = _call(client, "assistant_chat", {"message": "I have an advisor meeting tomorrow 3-4pm. Also clear the suggestions."});
+        assert r["error"] == "", r["error"];
+        assert r["actions"][0].startswith("Added event \"Advisor meeting\""), r["actions"];
+        assert r["actions"][1].startswith("Cleared"), r["actions"];
+        mine = [e for e in _call(client, "list_events", {"start": tomorrow, "end": ""}) if e["editable"]];
+        assert [e["title"] for e in mine] == ["Advisor meeting"];
+        assert _call(client, "list_blocks", {"start": "", "days": 14, "status": "suggested"}) == [];
+    } finally {
+        client.close();
+    }
+}

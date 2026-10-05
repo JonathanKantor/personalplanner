@@ -157,7 +157,8 @@ def _view(c: Calendar) -> CalendarView {
 def _event_view(c: Calendar, e: CalendarEvent) -> EventView {
     return EventView(
         id=jid(e), calendar_id=jid(c), series_id=e.series_id, title=e.title,
-        start=e.start, end=e.end, all_day=e.all_day, is_class=e.is_class
+        start=e.start, end=e.end, all_day=e.all_day, is_class=e.is_class,
+        editable=c.source == "manual"
     );
 }
 
@@ -219,6 +220,9 @@ def:protect list_series -> list[SeriesView] {
         for e in _events(c) {
             if not e.series_id {
                 continue;
+            }
+            if c.source == "manual" and e.series_id.startswith("one-") {
+                continue;                        # your one-off events aren't "recurring"
             }
             if e.series_id not in found {
                 found[e.series_id] = SeriesView(

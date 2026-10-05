@@ -11,7 +11,7 @@ import from cli.api { CliError }
 import from cli.commands {
     cmd_login, cmd_logout, cmd_whoami, cmd_add, cmd_list, cmd_done, cmd_edit,
     cmd_rm, cmd_suggest, cmd_accept, cmd_reject, cmd_move, cmd_today, cmd_week,
-    cmd_progress, cmd_sync, cmd_import, cmd_calendars, cmd_mark_class,
+    cmd_progress, cmd_clear, cmd_event, cmd_sync, cmd_import, cmd_calendars, cmd_mark_class,
     cmd_connect_google, cmd_disconnect_google, cmd_prefs, cmd_seed
 }
 
@@ -77,6 +77,14 @@ def build_parser -> argparse.ArgumentParser {
     p.add_argument("id");
     p.add_argument("start", help='e.g. "tue 15:00" or 2026-10-20T15:00');
     p.add_argument("end");
+    add("clear", cmd_clear, "Remove all pending suggestions (planned blocks stay)");
+    p = add("event", cmd_event, "Add a meeting/commitment that isn't in Google Calendar");
+    p.add_argument("title");
+    p.add_argument("--date", required=True, help='e.g. tue, tomorrow, 2026-10-09');
+    p.add_argument("--start", required=True, help="HH:MM, e.g. 15:00");
+    p.add_argument("--end", required=True, help="HH:MM");
+    p.add_argument("--weeks", type=int, `default=1, help="repeat weekly this many times");
+    p.add_argument("--class", dest="is_class", action="store_true", help="counts as a class");
     add("today", cmd_today, "Today's classes, events and planned blocks");
     p = add("week", cmd_week, "This week, day by day");
     p.add_argument("--next", action="store_true", help="next week instead");

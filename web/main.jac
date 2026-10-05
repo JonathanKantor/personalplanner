@@ -19,12 +19,13 @@ import from core.gcal {
     google_status, google_auth_url, connect_google, disconnect_google
 }
 import from core.planning {
-    suggest_schedule, list_blocks, accept_block, reject_block, accept_all,
+    suggest_schedule, list_blocks, accept_block, reject_block, accept_all, clear_suggestions,
     adjust_block, get_agenda, get_today, get_progress
 }
 import from core.views { get_week_view, get_day_view }
 import from core.canvas { canvas_sync, canvas_import, canvas_feed_url, canvas_forget }
 import from core.assistant { assistant_chat, assistant_history, assistant_reset, assistant_status }
+import from core.events { create_event, update_event, delete_event }
 import from core.seed { seed_demo_data }
 
 # ---------------------------------------------------------------- client

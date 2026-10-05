@@ -65,7 +65,7 @@ jac run                  # server + web app at http://localhost:8000
 | Page | What it does |
 |---|---|
 | `/login` | log in or sign up (same accounts as the CLI) |
-| `/` Week | classes, events and planned blocks in one grid; **Suggest schedule**; accept ✓ / reject ✗ in the grid, or Accept / Adjust / Reject with the reason in the Suggestions list; **click** a block or a "due:" label to edit the task; **drag** a block to another time or day (snaps to 15 min, keeps its length; moving a suggestion accepts it; drops onto classes/events/other planned blocks are refused); prev/next week |
+| `/` Week | classes, events and planned blocks in one grid; **Suggest schedule**; accept ✓ / reject ✗ in the grid, or Accept / Adjust / Reject with the reason in the Suggestions list; **click** a block or a "due:" label to edit the task; **drag** a block to another time or day (snaps to 15 min, keeps its length; moving a suggestion accepts it; drops onto classes/events/other planned blocks are refused); **+ Add event** for meetings not in Google Calendar (one-off or weekly; click to edit/delete, drag to move); **Clear suggestions** removes all pending suggestions (planned blocks stay); prev/next week |
 | `/tasks` | add tasks; click a task (or Edit) to edit, complete or delete it |
 | `/settings` | preferences, Connect Google Calendar, import an `.ics` file or iCal URL, mark calendars / recurring events as classes, load demo data |
 | `/oauth/callback` | where Google returns after the consent screen; finishes the connection |
@@ -190,6 +190,8 @@ plan accept 3f9a1c                   # or: plan accept all / plan reject <id>
 plan move 3f9a1c "tue 15:00" "tue 16:30"
 plan today                           # plan week [--next]
 plan done 8c21e0
+plan event "Advisor meeting" --date thu --start 15:00 --end 16:00   # --weeks 10 to repeat
+plan clear                           # remove all pending suggestions
 plan sync                            # re-sync Google / iCal-URL calendars
 plan --help                          # every command
 ```
@@ -318,6 +320,7 @@ core/             shared backend (no UI)
   views.jac         ready-to-draw day/week views in your timezone (web + mobile)
   mobile_api.jac    walkers the mobile app calls (the `mobile_api` service app)
   canvas.jac        Canvas calendar feed -> tasks (parse, sync, import)
+  events.jac        your own events ("My events" calendar): create/update/delete
   assistant.jac     AI chat assistant: byLLM function + planner tools
   seed.jac          demo data
   *.test.jac        unit tests for the module of the same name
