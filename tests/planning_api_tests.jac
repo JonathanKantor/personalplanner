@@ -13,6 +13,13 @@ import from jaclang.testing.testing { JacTestClient }
 
 glob TZ: str = "America/Detroit";
 
+"""Monday (local date) of the week the demo seed fills: this week, or next
+week when run on a weekend (same rule as core/seed.jac)."""
+def _demo_monday -> str {
+    d = datetime.now(ZoneInfo(TZ)) + timedelta(days=2);
+    return (d.date() - timedelta(days=d.weekday())).isoformat();
+}
+
 def _client -> any {
     main_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "main.jac");
     return JacTestClient.from_file(main_file, base_path=tempfile.mkdtemp());
@@ -199,7 +206,7 @@ test "today, agenda and progress views" {
         _call(client, "accept_all");
         today = _call(client, "get_today");
         assert set(today.keys()) >= {"events", "blocks", "due", "timezone"};
-        week = _call(client, "get_agenda");
+        week = _call(client, "get_agenda", {"start": _demo_monday(), "days": 7});
         assert len(week["events"]) >= 9;
         progress = _call(client, "get_progress");
         assert progress["tasks_open"] == 6;

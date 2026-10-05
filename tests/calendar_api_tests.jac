@@ -6,12 +6,20 @@ database folder, so these exercise auth, persistence, and the HTTP layer.
 
 import os;
 import tempfile;
-import from datetime { timedelta }
+import from datetime { datetime, timedelta }
+import from zoneinfo { ZoneInfo }
 import from jaclang.testing.testing { JacTestClient }
 import from core.seed { demo_ics, DemoWeekly }
 import from core.timeutil { now_utc, week_start, zone }
 
 glob TZ: str = "America/Detroit";
+
+"""Monday (local date) of the week the demo seed fills: this week, or next
+week when run on a weekend (same rule as core/seed.jac)."""
+def _demo_monday -> str {
+    d = datetime.now(ZoneInfo(TZ)) + timedelta(days=2);
+    return (d.date() - timedelta(days=d.weekday())).isoformat();
+}
 
 def _client -> any {
     main_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "main.jac");
@@ -108,7 +116,7 @@ test "demo seed creates classes and is repeatable" {
         assert first["calendars"] == second["calendars"];        # no duplicates
         cals = _call(client, "list_calendars");
         assert {c["name"] for c in cals} == {"Demo: Classes", "Demo: Personal"};
-        events = _call(client, "list_events");
+        events = _call(client, "list_events", {"start": _demo_monday(), "end": ""});
         classes = [e for e in events if e["is_class"]];
         assert len(classes) == 9, len(classes);                   # 9 class meetings per demo week
         assert {e["title"] for e in events if not e["is_class"]} == {"Robotics club", "Dentist"};

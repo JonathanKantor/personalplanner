@@ -1,0 +1,9 @@
+#!/bin/bash
+# `plan` from any folder: runs the Jac CLI app (cli/main.jac) in this project.
+# Put this folder on your PATH, e.g.:  export PATH="$PATH:/path/to/project/bin"
+export PLAN_CWD="$PWD"                      # so `plan import ./x.ics` finds the file
+SCRIPT="$0"
+while [ -L "$SCRIPT" ]; do SCRIPT="$(readlink "$SCRIPT")"; done
+cd "$(dirname "$SCRIPT")/.." || exit 1
+source ./env.sh
+exec jac run cli -- "$@"

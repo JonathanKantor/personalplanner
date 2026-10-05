@@ -107,7 +107,8 @@ def:protect seed_demo_data -> dict {
     }
 
     # --- calendars: imported through the normal .ics path
-    monday = week_start(now_utc(), tz).astimezone(zone(tz));
+    # On a weekend, demo next week (this week is nearly over).
+    monday = week_start(now_utc() + timedelta(days=2), tz).astimezone(zone(tz));
     friday_9am = (monday + timedelta(days=4)).replace(hour=9);
     dentist = "\r\n".join([
         "BEGIN:VEVENT", "UID:demo-dentist", "SUMMARY:Dentist",

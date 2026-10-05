@@ -7,8 +7,7 @@ for the week, and recommends time slots around your classes.
 One backend serves four clients: a web app, a mobile app, a CLI, and the HTTP
 API itself.
 
-> Status: slices 1–3 done (server, tasks, preferences, calendar import/sync,
-> scheduler). CLI, web UI, and mobile app are in progress.
+> Status: server, scheduler and CLI done. Web UI and mobile app are in progress.
 
 ## Setup
 
@@ -59,10 +58,43 @@ jac run                  # server + web app at http://localhost:8000
 - API docs (every endpoint, try them in the browser): http://localhost:8000/docs
 - Run all tests: `jac test` (one file: `jac test core/scheduler.jac`)
 
+### CLI
+
+The server must be running (`jac run` in another terminal). Then:
+
+```bash
+export PATH="$PATH:$(pwd)/bin"      # once per terminal (or add to ~/.zshrc)
+plan signup alice                    # or: plan login alice
+plan seed                            # demo classes + tasks
+plan add "PS5" --due "thu 17:00" --priority high --est 90 --course "EECS 376"
+plan suggest                         # proposed slots, each with a reason
+plan accept 3f9a1c                   # or: plan accept all / plan reject <id>
+plan move 3f9a1c "tue 15:00" "tue 16:30"
+plan today                           # plan week [--next]
+plan done 8c21e0
+plan sync                            # re-sync Google / iCal-URL calendars
+plan --help                          # every command
+```
+
+- `--due` accepts `today`, `tomorrow`, `fri`, `"fri 17:00"`, `2026-10-09`, or
+  `"2026-10-09 17:00"`.
+- Ids are shown as 6 characters; any unique prefix works.
+- `plan login` stores your session token in `~/.config/jac-planner/config.json`
+  (mode 600). `plan logout` deletes it. Point at another server with
+  `plan login --server https://...` or `PLAN_SERVER=...`.
+- `bin/plan` is a small wrapper for `jac run cli -- <command>`.
+
+**Connecting Google from the terminal:** `plan connect-google` opens Google's
+consent page. After you approve, the browser lands on
+`http://localhost:8000/oauth/callback?code=...`; copy that whole address back
+into the terminal. Then `plan calendars` and `plan mark-class <id>` for your
+class calendar or courses.
+
 ### Demo data (no Google account needed)
 
-After creating an account, call `seed_demo_data` (from `/docs`, or the CLI
-once it exists). It creates six tasks plus two calendars for the current week:
+After creating an account, run `plan seed` (or call `seed_demo_data` from
+`/docs`). It creates six tasks plus two calendars for the current week (next
+week, if run on a weekend):
 "Demo: Classes" (marked as classes) and "Demo: Personal". Running it again
 replaces the demo data without touching your own tasks or calendars.
 
@@ -167,6 +199,11 @@ core/             shared backend (no UI)
   seed.jac          demo data
   *.test.jac        unit tests for the module of the same name
 web/              the web app; its main.jac registers every endpoint
+cli/              the `plan` command (talks to the server over HTTP)
+  api.jac           HTTP calls + login token storage
+  commands.jac      one function per command
+  main.jac          argument parsing
+bin/plan          wrapper so you can type `plan ...` anywhere
 tests/            end-to-end endpoint tests
 ```
 
