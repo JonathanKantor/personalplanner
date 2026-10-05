@@ -35,6 +35,7 @@ import from core.seed { seed_demo_data }
 
 import ".styles.tokens.css";        # design tokens: the one place values live
 import ".styles.global.css";
+import ".styles.components.css";    # kit + shell styles
 
 def:pub app(children: any) -> JsxElement {
     <>{children}</>

@@ -11,6 +11,8 @@ import type from core.models { WeekView, PlanView, DayItem }
 import from ...components.WeekGrid { WeekGrid }
 import from ...components.TaskEditor { TaskEditor }
 import from ...components.EventEditor { EventEditor }
+import from ...components.PageHeader { PageHeader }
+import from ...components.kit { Button, Card, Icon }
 import from core.events { update_event }
 import from core.planning { clear_suggestions }
 import from ...lib.ui { error_text, hhmm }
@@ -29,7 +31,8 @@ def:pub WeekPage() -> JsxPage {
         # the event editor: open, the event (None = new) and its date
         event_open: bool = False,
         event_item: DayItem | None = None,
-        event_date: str = "";
+        event_date: str = "",
+        adding_task: bool = False;           # "+ Add task" dialog open
 
     async def load {
         try {
@@ -168,6 +171,15 @@ def:pub WeekPage() -> JsxPage {
     }
 
     <div>
+        <PageHeader eyebrow="Your week, in rhythm" title="A little more room to think."
+                    subtitle="Classes, deadlines, and the time between them — all in one place.">
+            <Button id="add-task" label="Add task" icon="plus" onClick={lambda (e: MouseEvent) { adding_task = True; }} />
+            <Button id="add-event" label="Add event" icon="plus" variant="primary"
+                    onClick={lambda (e: MouseEvent) { open_event(None, today_or_monday()); }} />
+        </PageHeader>
+
+        <div className="planner-layout">
+        <div className="planner-main">
         <div className="week-head">
             <h1>{week.label if week else "Week"}</h1>
             <button className="btn" onClick={prev_week} disabled={not week}>‹ Prev</button>
@@ -179,7 +191,6 @@ def:pub WeekPage() -> JsxPage {
                 <button id="accept-all" className="btn" onClick={accept_everything} disabled={busy}>Accept all ({week.suggested_count})</button>}
             {week and week.suggested_count > 0 and
                 <button id="clear-suggestions" className="btn" onClick={clear_all} disabled={busy}>Clear suggestions</button>}
-            <button id="add-event" className="btn" onClick={lambda (e: MouseEvent) { open_event(None, today_or_monday()); }}>+ Add event</button>
         </div>
         <div className="legend" style={{"marginBottom": "var(--space-2)"}}>
             <span className="l-class">Class</span><span className="l-event">Event</span>
@@ -235,5 +246,16 @@ def:pub WeekPage() -> JsxPage {
                 </ul>
             </div>
         }}
+        </div>
+        <aside className="planner-side" aria-label="Coming up">
+            <Card className="side-card">
+                <div className="side-card-head"><Icon name="cap" /> Coming up</div>
+                <p className="muted">Your upcoming tasks will appear here (step 4).</p>
+            </Card>
+        </aside>
+        </div>
+
+        {adding_task and week and <TaskEditor taskId="" tz={week.timezone}
+                onClose={lambda { adding_task = False; }} onChanged={lambda { load(); }} />}
     </div>
 }

@@ -1,4 +1,5 @@
-"""Edit-task dialog, opened by clicking a task (or one of its blocks).
+"""Task dialog. With taskId="" it adds a new task ("+ Add task"); otherwise
+it edits one, opened by clicking a task (or one of its blocks).
 
 Edits the task itself (title, due, estimate, priority, course, notes; mark
 done; delete). If opened from a block in the week grid, it also has that
@@ -6,7 +7,7 @@ block's actions: accept / reject a suggestion, change its time, or remove a
 planned block from the calendar.
 """
 
-import from core.tasks { get_task, update_task, complete_task, delete_task }
+import from core.tasks { get_task, create_task, update_task, complete_task, delete_task }
 import from core.planning { accept_block, reject_block, adjust_block }
 import type from core.models { TaskView, DayItem }
 import from ..lib.ui { error_text, hhmm, local_input }
@@ -31,10 +32,16 @@ def:pub TaskEditor(
         notes: str = "",
         b_date: str = "",
         b_start: str = "",
-        b_end: str = "";
+        b_end: str = "",
+        ready: bool = False;                 # form can be shown
+    creating = not taskId;
 
-    # Load the task when the dialog opens.
+    # Load the task when the dialog opens (nothing to load when adding).
     async can with entry {
+        if not taskId {
+            ready = True;
+            return;
+        }
         try {
             t = await get_task(taskId);
             task = t;
@@ -44,6 +51,7 @@ def:pub TaskEditor(
             minutes = str(t.estimated_minutes);
             course = t.category;
             notes = t.notes;
+            ready = True;
             if block {
                 b_date = blockDate;
                 b_start = hhmm(block.start_min);
@@ -59,7 +67,9 @@ def:pub TaskEditor(
         error = "";
         busy = True;
         try {
-            if action == "save" {
+            if action == "save" and creating {
+                await create_task(title, due, priority, int(minutes or "0"), notes, course, "");
+            } elif action == "save" {
                 await update_task(taskId, {
                     "title": title, "due": due, "priority": priority,
                     "estimated_minutes": int(minutes or "0"), "category": course, "notes": notes
@@ -91,12 +101,12 @@ def:pub TaskEditor(
     <div className="modal-backdrop" onClick={lambda (e: MouseEvent) { onClose(); }}>
         <div className="modal panel" onClick={stop}>
             <div className="row" style={{"marginBottom": "var(--space-2)"}}>
-                <h2 style={{"margin": "0"}}>Edit task</h2>
+                <h2 style={{"margin": "0"}}>{"Add task" if creating else "Edit task"}</h2>
                 <span className="spacer"></span>
                 <button className="btn small" onClick={lambda (e: MouseEvent) { onClose(); }}>Close</button>
             </div>
             {error and <div className="error">{error}</div>}
-            {if not task {
+            {if not ready {
                 <p className="muted">{"" if error else "Loading..."}</p>
             } else {
                 <div>
@@ -146,14 +156,16 @@ def:pub TaskEditor(
                         </label>
                     </div>
                     <div className="row" style={{"marginTop": "var(--space-3)"}}>
-                        <button id="edit-save" className="btn primary" onClick={lambda (e: MouseEvent) { act("save"); }} disabled={busy}>Save</button>
-                        {(task.status != "done") and <button className="btn" onClick={lambda (e: MouseEvent) { act("done"); }} disabled={busy}>Mark done</button>}
+                        <button id="edit-save" className="btn primary" onClick={lambda (e: MouseEvent) { act("save"); }} disabled={busy or not title.strip() or not due}>{"Add task" if creating else "Save"}</button>
+                        {(task and task.status != "done") and <button className="btn" onClick={lambda (e: MouseEvent) { act("done"); }} disabled={busy}>Mark done</button>}
                         <span className="spacer"></span>
-                        {(
-                            <button className="btn danger" onClick={lambda (e: MouseEvent) { act("delete"); }} disabled={busy}>Really delete?</button>
-                        ) if confirm_delete else (
-                            <button className="btn danger" onClick={lambda (e: MouseEvent) { confirm_delete = True; }}>Delete task</button>
-                        )}
+                        {if not creating {
+                            if confirm_delete {
+                                <button className="btn danger" onClick={lambda (e: MouseEvent) { act("delete"); }} disabled={busy}>Really delete?</button>
+                            } else {
+                                <button className="btn danger" onClick={lambda (e: MouseEvent) { confirm_delete = True; }}>Delete task</button>
+                            }
+                        }}
                     </div>
                 </div>
             }}

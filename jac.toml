@@ -42,6 +42,7 @@ entry-point = "web.main"
 
 [apps.web.dependencies.npm]
 jac-client-node = "1.0.7"
+lucide-react = "^0.469.0"
 
 [apps.web.dependencies.npm.dev]
 "@jac-client/dev-deps" = "1.0.0"

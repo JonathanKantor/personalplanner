@@ -101,6 +101,7 @@
   --swatch: 10px;                            /* legend squares */
   --block-actions: 48px;                     /* room for the ✓ ✗ on suggested blocks */
   --chat-min-height: 320px;
+  --menu-min-width: 200px;
 }
 
 /* Respect "reduce motion": no transitions or animated movement. */

@@ -19,6 +19,8 @@ def:pub SettingsPage() -> JsxPage {
         busy: bool = False,
         # preferences form
         timezone: str = "",
+        display_name: str = "",
+        city: str = "",
         work_start: str = "",
         work_end: str = "",
         days_off: list[str] = [],
@@ -38,6 +40,8 @@ def:pub SettingsPage() -> JsxPage {
         try {
             p = await get_preferences();
             timezone = p.timezone;
+            display_name = p.display_name;
+            city = p.city;
             work_start = p.work_start;
             work_end = p.work_end;
             days_off = p.days_off;
@@ -77,6 +81,7 @@ def:pub SettingsPage() -> JsxPage {
         try {
             await update_preferences({
                 "timezone": timezone, "work_start": work_start, "work_end": work_end,
+                "display_name": display_name, "city": city,
                 "days_off": days_off, "preferred_start": preferred_start,
                 "preferred_end": preferred_end, "min_break_minutes": int(min_break),
                 "max_focus_minutes_per_day": int(max_focus)
@@ -199,6 +204,14 @@ def:pub SettingsPage() -> JsxPage {
         <form className="panel" onSubmit={save_prefs}>
             <h2>Preferences</h2>
             <div className="form-grid">
+                <label className="field">Your name (shown in the header)
+                    <input id="display-name" value={display_name} placeholder="e.g. Maya Chen"
+                        onChange={lambda (e: ChangeEvent) { display_name = e.target.value; }} />
+                </label>
+                <label className="field">City (shown next to today's date)
+                    <input id="city" value={city} placeholder="e.g. Ann Arbor"
+                        onChange={lambda (e: ChangeEvent) { city = e.target.value; }} />
+                </label>
                 <label className="field">Timezone
                     <input id="timezone" value={timezone} onChange={lambda (e: ChangeEvent) { timezone = e.target.value; }} />
                 </label>

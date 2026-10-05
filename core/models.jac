@@ -46,7 +46,9 @@ node Preferences {
         preferred_start: str = "",                # preferred study window,
         preferred_end: str = "",                  # "" = no preference
         min_break_minutes: int = 15,
-        max_focus_minutes_per_day: int = 360;
+        max_focus_minutes_per_day: int = 360,
+        display_name: str = "",                   # shown in the web header ("" = username)
+        city: str = "";                           # shown next to today's date
 }
 
 obj PreferencesView {
@@ -57,7 +59,9 @@ obj PreferencesView {
         preferred_start: str,
         preferred_end: str,
         min_break_minutes: int,
-        max_focus_minutes_per_day: int;
+        max_focus_minutes_per_day: int,
+        display_name: str = "",
+        city: str = "";
 }
 
 # ---------------------------------------------------------------- Tasks

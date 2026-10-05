@@ -39,3 +39,26 @@ def:pub local_input(iso: str, tz: str) -> str {
     d: any = new(Date, iso);  # jac:ignore[E1053]
     return d.toLocaleString("sv-SE", {"timeZone": tz}).replace(" ", "T")[0:16];
 }
+
+"""The logged-in user's username, from the server's built-in /user/me
+(used when no display name is set). "" if it can't be read."""
+async def:pub current_username -> str {
+    try {
+        token: any = localStorage.getItem("jac_token");  # jac:ignore[E1032]
+        resp: any = await fetch("/user/me", {"headers": {"Authorization": "Bearer " + str(token)}});  # jac:ignore[E1032]
+        body: any = await resp.json();
+        info: any = body.data if body.data else body;
+        for ident in info.identities {
+            if ident.type == "username" {
+                return ident.value;
+            }
+        }
+    } except Exception {}
+    return "";
+}
+
+"""Today in the user's timezone, e.g. "Mon, Oct 5"."""
+def:pub today_label(tz: str) -> str {
+    d: any = new(Date);  # jac:ignore[E1053]
+    return d.toLocaleDateString("en-US", {"weekday": "short", "month": "short", "day": "numeric", "timeZone": tz});
+}

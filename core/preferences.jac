@@ -43,7 +43,9 @@ def _view(p: Preferences) -> PreferencesView {
         preferred_start=p.preferred_start,
         preferred_end=p.preferred_end,
         min_break_minutes=p.min_break_minutes,
-        max_focus_minutes_per_day=p.max_focus_minutes_per_day
+        max_focus_minutes_per_day=p.max_focus_minutes_per_day,
+        display_name=p.display_name,
+        city=p.city
     );
 }
 
@@ -53,7 +55,8 @@ def:protect get_preferences -> PreferencesView {
 
 glob PREF_FIELDS: list[str] = [
     "timezone", "work_start", "work_end", "days_off", "preferred_start",
-    "preferred_end", "min_break_minutes", "max_focus_minutes_per_day"
+    "preferred_end", "min_break_minutes", "max_focus_minutes_per_day",
+    "display_name", "city"
 ];
 
 """Change some preferences, e.g. changes={"days_off": ["sat", "sun"]}.
@@ -98,6 +101,8 @@ def:protect update_preferences(changes: dict) -> PreferencesView {
     p.preferred_end = pref_end;
     p.min_break_minutes = gap;
     p.max_focus_minutes_per_day = cap;
+    p.display_name = get_str(changes, "display_name", p.display_name).strip()[:40];
+    p.city = get_str(changes, "city", p.city).strip()[:40];
     # Imported here, not at the top: core.planning imports this module.
     import from core.planner { replan_if_pending }
     replan_if_pending();
