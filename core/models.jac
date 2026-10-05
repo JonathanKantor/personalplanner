@@ -371,3 +371,21 @@ obj AssistantStatus {
     has configured: bool,
         model: str;
 }
+
+"""One row of the web "Coming up" card."""
+obj UpcomingItem {
+    has id: str,
+        title: str,
+        course: str,
+        due: str,                  # UTC ISO
+        due_day: str,              # "Wed"
+        date_chip: str,            # "Oct 5"
+        overdue: bool;
+}
+
+obj ComingUpView {
+    has open_count: int,
+        items: list[UpcomingItem],
+        week_done: int,            # tasks due in the shown week that are done
+        week_total: int;           # tasks due in the shown week
+}

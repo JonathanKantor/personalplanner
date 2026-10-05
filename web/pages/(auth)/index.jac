@@ -5,11 +5,12 @@ to edit it (TaskEditor); drag a block to move it.
 Pages in the (auth) folder require login; the router redirects to /login.
 """
 
-import from core.views { get_week_view }
+import from core.views { get_week_view, get_coming_up }
 import from core.planning { suggest_schedule, accept_block, reject_block, accept_all, adjust_block }
-import type from core.models { WeekView, PlanView, DayItem }
+import type from core.models { WeekView, PlanView, DayItem, ComingUpView }
 import from ...components.WeekGrid { WeekGrid }
 import from ...components.AgendaList { AgendaList }
+import from ...components.ComingUp { ComingUp }
 import from core.tasks { complete_task, update_task }
 import from ...components.TaskEditor { TaskEditor }
 import from ...components.EventEditor { EventEditor }
@@ -35,11 +36,13 @@ def:pub WeekPage() -> JsxPage {
         event_item: DayItem | None = None,
         event_date: str = "",
         adding_task: bool = False,           # "+ Add task" dialog open
-        view: str = "week";                  # "week" grid or "agenda" list
+        view: str = "week",                  # "week" grid or "agenda" list
+        coming: ComingUpView | None = None;  # right-rail "Coming up" card
 
     async def load {
         try {
             week = await get_week_view(start);
+            coming = await get_coming_up(6, start);
         } except Exception as e {
             error = error_text(e);
         }
@@ -257,10 +260,9 @@ def:pub WeekPage() -> JsxPage {
             }}
         </div>
         <aside className="planner-side" aria-label="Coming up">
-            <Card className="side-card">
-                <div className="side-card-head"><Icon name="cap" /> Coming up</div>
-                <p className="muted">Your upcoming tasks will appear here (step 4).</p>
-            </Card>
+            <ComingUp data={coming}
+                onToggleDone={lambda (id: str) { toggle_done(id, False); }}
+                onOpen={lambda (id: str) { open_editor(id, None, ""); }} />
         </aside>
         </div>
 

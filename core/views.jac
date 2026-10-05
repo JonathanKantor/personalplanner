@@ -7,11 +7,13 @@ positioning in a grid).
 """
 
 import from datetime { datetime, date, timedelta }
-import from core.models { DayItem, DayView, WeekView, TaskView, Preferences }
+import from core.models { DayItem, DayView, WeekView, TaskView, Preferences, UpcomingItem, ComingUpView, TaskStatus }
+import from core.changes { as_int }
 import from core.timeutil { now_utc, from_iso, zone, parse_hhmm, week_start }
 import from core.preferences { _prefs }
 import from core.scheduler { clock }
 import from core.planner { _agenda, _tasks }
+import from core.models { Task }
 
 def _minutes(dt: datetime) -> int {
     return dt.hour * 60 + dt.minute;
@@ -126,3 +128,36 @@ def:protect get_day_view(day: str = "") -> DayView {
     d = date.fromisoformat(day) if day else now_utc().astimezone(zone(p.timezone)).date();
     return _days(d, 1, p)[0];
 }
+
+"""Data for the web "Coming up" card: open tasks soonest first (up to
+`limit`), how many are open, and the follow-through score for the week that
+contains `week_start` (local YYYY-MM-DD; default this week)."""
+def:protect get_coming_up(limit: int = 6, week_start: str = "") -> ComingUpView {
+    limit = as_int(limit, "limit");                  # see core/changes.jac
+    p = _prefs();
+    tz = zone(p.timezone);
+    now = now_utc();
+    anchor = date.fromisoformat(week_start) if week_start else now.astimezone(tz).date();
+    monday = anchor - timedelta(days=anchor.weekday());
+    lo = datetime.combine(monday, datetime.min.time(), tzinfo=tz);
+    hi = lo + timedelta(days=7);
+
+    tasks = _tasks();
+    open_tasks = sorted([t for t in tasks if t.status != TaskStatus.DONE], key=lambda (t: Task) { t.due; });
+    items: list[UpcomingItem] = [];
+    for t in open_tasks[:max(0, limit)] {
+        local = from_iso(t.due).astimezone(tz);
+        items.append(UpcomingItem(
+            id=jid(t), title=t.title, course=t.category, due=t.due,
+            due_day=local.strftime("%a"), date_chip=local.strftime("%b ") + str(local.day),
+            overdue=from_iso(t.due) < now
+        ));
+    }
+    in_week = [t for t in tasks if lo <= from_iso(t.due) and from_iso(t.due) < hi];
+    return ComingUpView(
+        open_count=len(open_tasks), items=items,
+        week_done=len([t for t in in_week if t.status == TaskStatus.DONE]),
+        week_total=len(in_week)
+    );
+}
+
