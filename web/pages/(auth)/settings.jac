@@ -1,5 +1,7 @@
 """/settings - preferences, calendar connection and import, class marking."""
 
+import from "react" { useEffect }
+import from "@jac/runtime" { useLocation }
 import from core.preferences { get_preferences, update_preferences }
 import from core.calendars {
     list_calendars, set_calendar_is_class, list_series, set_series_is_class,
@@ -12,11 +14,13 @@ import type from core.models { CalendarView, SeriesView, SyncResult }
 import from ...lib.ui { error_text }
 import from ...components.PageHeader { PageHeader }
 import from ...components.kit { Chip }
+import from ...components.CanvasImport { CanvasImport }
 
 glob DAYS: list[str] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
 def:pub SettingsPage() -> JsxPage {
-    has error: str = "",
+    has ready: bool = False,                 # first load finished
+        error: str = "",
         notice: str = "",
         busy: bool = False,
         # preferences form
@@ -63,7 +67,19 @@ def:pub SettingsPage() -> JsxPage {
 
     async can with entry {
         await load();
+        ready = True;
     }
+
+    # A link to /settings#canvas (rail, command palette, the old /canvas URL)
+    # scrolls to the Canvas section, once the sections above it have loaded
+    # (scrolling earlier lands short as they grow).
+    location = useLocation();
+    useEffect(lambda {
+        if ready and location.hash == "#canvas" {
+            el: any = document.getElementById("canvas");  # jac:ignore[E1032]
+            if el { el.scrollIntoView({"block": "start"}); }
+        }
+    }, [ready, location.hash]);
 
     def show_sync(results: list[SyncResult]) {
         if len(results) == 0 {
@@ -289,6 +305,8 @@ def:pub SettingsPage() -> JsxPage {
                 }}
             </div>
         </div>
+
+        <CanvasImport />
 
         <div className="panel">
             <h2>Calendars</h2>

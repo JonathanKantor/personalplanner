@@ -110,3 +110,6 @@ input[type="file"]::file-selector-button {
   margin-right: var(--space-2); padding: var(--space-1) var(--space-3); border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-control); background: var(--color-surface); color: var(--color-text); font: inherit; cursor: pointer;
 }
+.canvas-review { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
+#canvas { scroll-margin-top: calc(var(--space-10) * 2); }   /* clear the sticky top bar */
+.panel h2.mt-4 { margin-top: var(--space-6); }       /* a second heading inside one panel */

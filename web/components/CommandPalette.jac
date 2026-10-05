@@ -19,7 +19,7 @@ glob GO: list[Command] = [
     Command(id="go-planner", label="Go to Planner", icon="calendar", kind="go", to="/"),
     Command(id="go-tasks", label="Go to Tasks", icon="tasks", kind="go", to="/tasks"),
     Command(id="go-assistant", label="Open assistant page", icon="chat", kind="go", to="/assistant"),
-    Command(id="go-canvas", label="Import from Canvas", icon="book", kind="go", to="/canvas"),
+    Command(id="go-canvas", label="Import from Canvas", icon="book", kind="go", to="/settings#canvas"),
     Command(id="go-settings", label="Settings", icon="settings", kind="go", to="/settings")
 ];
 

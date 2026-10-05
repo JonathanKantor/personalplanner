@@ -10,7 +10,7 @@ glob SECTIONS: list[NavItem] = [
 ];
 
 glob MORE_LINKS: list[NavItem] = [
-    NavItem(to="/canvas", icon="book", label="Import from Canvas"),
+    NavItem(to="/settings#canvas", icon="book", label="Import from Canvas"),
     NavItem(to="/settings", icon="settings", label="Settings")
 ];
 

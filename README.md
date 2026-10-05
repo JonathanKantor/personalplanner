@@ -76,7 +76,8 @@ generates the HTTP calls. Times are converted to your timezone on the server
 
 ### Canvas assignments -> tasks
 
-Web app -> **Canvas** tab. In Canvas, open Calendar and copy the "Calendar
+Web app -> **Settings -> Canvas assignments** (also in the rail's "..." menu
+and the Cmd/Ctrl+K palette; the old `/canvas` URL redirects there). In Canvas, open Calendar and copy the "Calendar
 Feed" link (bottom right; it's private, like a password), paste it, and
 press **Load assignments**. Tick the ones to import, set each estimate (or
 "Estimate for all ticked"), priority and course, then **Import**.
@@ -326,7 +327,8 @@ core/             shared backend (no UI)
   *.test.jac        unit tests for the module of the same name
 web/              the web app; its main.jac registers every endpoint
   pages/            one file per URL (file-based routing); (auth)/ = login required
-  components/       WeekGrid.jac
+  components/       kit.jac (Button, Card, Chip, Dialog, ...), WeekGrid, EventBlock, ComingUp,
+                    AskMorrow + AssistantChat, CommandPalette, CanvasImport, editors
   lib/ui.jac        error-message and time helpers
   styles/global.css
 mobile/           the phone app (mobUI): main.jac, screens/, components/, theme.jac, lib.jac
