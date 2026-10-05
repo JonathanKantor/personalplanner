@@ -9,6 +9,7 @@ default-app = "web"
 icalendar = "~=7.3"
 recurring-ical-events = "~=3.8"
 requests = "~=2.34"
+byllm = "~=0.6"
 [dependencies.npm]
 react = "^19.2.0"
 react-dom = "^19.2.0"

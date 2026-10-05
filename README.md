@@ -92,6 +92,27 @@ press **Load assignments**. Tick the ones to import, set each estimate (or
 - Endpoints: `canvas_sync(url)`, `canvas_import(choices)`, `canvas_feed_url()`,
   `canvas_forget()` in `core/canvas.jac`.
 
+### AI planning assistant
+
+Web app -> **Assistant** tab: chat to plan, e.g. "Plan my week and explain
+it", "Add a 2-hour paper due Friday 5pm", "I don't want to work after 8pm",
+"When am I free Thursday afternoon?". Each reply lists what it changed.
+
+Setup (free): get a Gemini API key at https://aistudio.google.com/apikey
+(sign in with a Google account; no credit card), put `GEMINI_API_KEY=...` in
+`.env`, then restart the server (`source env.sh && jac run`). The default
+model is `gemini/gemini-2.5-flash`; set `BYLLM_DEFAULT_MODEL` in `.env` to use
+another (any byLLM/LiteLLM model name).
+
+How it works (`core/assistant.jac`, Jac's byLLM): `_assistant_turn` is a
+`by llm(tools=[...])` function. The model can only act through 12 planner
+tools (see the calendar, list/add/update/complete tasks, run the scheduler,
+accept/reject/move blocks, read/change preferences); there is no delete tool.
+To find time it runs the same deterministic scheduler as the "Suggest
+schedule" button rather than inventing slots, and it accepts suggestions only
+when you agree. Your conversation is stored per user (New chat clears it).
+Tests use byLLM's `MockLLM` (no key needed): `tests/assistant_api_tests.jac`.
+
 ### Mobile app
 
 Today's schedule (classes + planned blocks), accept ✓ / reject ✗ suggestions,
@@ -293,6 +314,7 @@ core/             shared backend (no UI)
   views.jac         ready-to-draw day/week views in your timezone (web + mobile)
   mobile_api.jac    walkers the mobile app calls (the `mobile_api` service app)
   canvas.jac        Canvas calendar feed -> tasks (parse, sync, import)
+  assistant.jac     AI chat assistant: byLLM function + planner tools
   seed.jac          demo data
   *.test.jac        unit tests for the module of the same name
 web/              the web app; its main.jac registers every endpoint

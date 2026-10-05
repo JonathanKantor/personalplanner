@@ -28,6 +28,7 @@ def:pub Shell() -> JsxLayout {
                 <Link to="/" className={link_class("/")}>Week</Link>
                 <Link to="/tasks" className={link_class("/tasks")}>Tasks</Link>
                 <Link to="/canvas" className={link_class("/canvas")}>Canvas</Link>
+                <Link to="/assistant" className={link_class("/assistant")}>Assistant</Link>
                 <Link to="/settings" className={link_class("/settings")}>Settings</Link>
                 <span className="spacer"></span>
                 <button className="btn small" onClick={logout}>Log out</button>

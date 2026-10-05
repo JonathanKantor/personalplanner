@@ -24,6 +24,7 @@ import from core.planning {
 }
 import from core.views { get_week_view, get_day_view }
 import from core.canvas { canvas_sync, canvas_import, canvas_feed_url, canvas_forget }
+import from core.assistant { assistant_chat, assistant_history, assistant_reset, assistant_status }
 import from core.seed { seed_demo_data }
 
 # ---------------------------------------------------------------- client

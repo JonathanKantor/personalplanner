@@ -333,3 +333,32 @@ obj CanvasImportResult {
         dismissed: int = 0,
         skipped: int = 0;
 }
+
+# ---------------------------------------------------------------- AI assistant
+# Filled by core/assistant.jac.
+
+"""The user's conversation with the assistant (one per user).
+`messages` is the model-facing history (byLLM's format, includes tool calls);
+`transcript` is what the chat window shows."""
+node ChatThread {
+    has messages: list[dict] = [],
+        transcript: list[dict] = [],
+        updated_at: str = "";
+}
+
+obj ChatMessage {
+    has role: str,                                # "user" | "assistant"
+        text: str,
+        actions: list[str] = [];                  # what the assistant changed
+}
+
+obj ChatReply {
+    has reply: str,
+        actions: list[str] = [],
+        error: str = "";
+}
+
+obj AssistantStatus {
+    has configured: bool,
+        model: str;
+}
