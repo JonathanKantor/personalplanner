@@ -23,6 +23,7 @@ import from core.planning {
     adjust_block, get_agenda, get_today, get_progress
 }
 import from core.views { get_week_view, get_day_view }
+import from core.canvas { canvas_sync, canvas_import, canvas_feed_url, canvas_forget }
 import from core.seed { seed_demo_data }
 
 # ---------------------------------------------------------------- client

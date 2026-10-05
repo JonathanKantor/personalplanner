@@ -90,6 +90,8 @@ node Task {
         created_at: str = "",
         completed_at: str = "",
         parent_id: str = "",                      # set on later occurrences of a recurring task
+        source_uid: str = "",                     # Canvas assignment UID if imported from Canvas
+        source_url: str = "",                     # link to the assignment in Canvas
         is_demo: bool = False;                    # created by seed_demo_data
 
     """The API shape of this task. jid(self) is the node's stable id; it
@@ -297,4 +299,37 @@ obj WeekView {
         work_end_min: int,
         days: list[DayView],
         suggested_count: int;
+}
+
+# ---------------------------------------------------------------- Canvas import
+# Filled by core/canvas.jac.
+
+"""The user's Canvas calendar feed (one per user)."""
+node CanvasFeed {
+    has url: str,
+        last_synced: str = "",
+        dismissed: list[str] = [];               # assignment UIDs the user chose not to import
+}
+
+"""One assignment found in the Canvas feed, shown in the review table."""
+obj CanvasItem {
+    has uid: str,
+        title: str,
+        course: str,
+        due: str,                                 # UTC ISO datetime
+        url: str,
+        status: str;                              # "new" | "imported" | "dismissed" | "past_due"
+}
+
+obj CanvasPreview {
+    has feed_url: str,
+        items: list[CanvasItem],
+        courses: list[str],
+        updated: int = 0;                         # imported tasks whose due date/title were refreshed
+}
+
+obj CanvasImportResult {
+    has created: int = 0,
+        dismissed: int = 0,
+        skipped: int = 0;
 }

@@ -74,6 +74,24 @@ The pages call server functions directly (`await suggest_schedule(7)`); Jac
 generates the HTTP calls. Times are converted to your timezone on the server
 (`core/views.jac`), so the browser does no timezone math.
 
+### Canvas assignments -> tasks
+
+Web app -> **Canvas** tab. In Canvas, open Calendar and copy the "Calendar
+Feed" link (bottom right; it's private, like a password), paste it, and
+press **Load assignments**. Tick the ones to import, set each estimate (or
+"Estimate for all ticked"), priority and course, then **Import**.
+
+- Only assignments are read (UIDs `event-assignment-...`, or links to
+  assignments/quizzes/discussions); section meetings in the feed are ignored.
+  The course comes from the `[EECS 449 001 FA 2026]` suffix, shortened to
+  `EECS 449`. All-day due dates mean 11:59pm.
+- **Sync** later: imported tasks get Canvas's current due date and title (your
+  estimate is kept); only new assignments are offered. Unticked ones are
+  remembered as skipped. Each task stores its Canvas UID, so nothing is
+  duplicated.
+- Endpoints: `canvas_sync(url)`, `canvas_import(choices)`, `canvas_feed_url()`,
+  `canvas_forget()` in `core/canvas.jac`.
+
 ### Mobile app
 
 Today's schedule (classes + planned blocks), accept ✓ / reject ✗ suggestions,
@@ -274,6 +292,7 @@ core/             shared backend (no UI)
   planning.jac      planning endpoints: suggest/accept/reject/adjust, agenda, progress
   views.jac         ready-to-draw day/week views in your timezone (web + mobile)
   mobile_api.jac    walkers the mobile app calls (the `mobile_api` service app)
+  canvas.jac        Canvas calendar feed -> tasks (parse, sync, import)
   seed.jac          demo data
   *.test.jac        unit tests for the module of the same name
 web/              the web app; its main.jac registers every endpoint
