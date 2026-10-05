@@ -1,0 +1,29 @@
+# Jac build output, per-project venv, and local database (.jac/data)
+.jac/
+dist/
+node_modules/
+
+# Secrets: OAuth client files, tokens, env files
+.env
+.env.*
+!.env.example
+client_secret*.json
+credentials*.json
+token*.json
+*.pem
+*.key
+jac.local.toml
+
+# Local database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
