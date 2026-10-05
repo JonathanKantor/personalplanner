@@ -79,7 +79,7 @@
 .ev {
   position: absolute; left: var(--space-1); right: var(--space-1); overflow: hidden;
   border-radius: var(--radius-block); border-left: 2px solid transparent;
-  padding: var(--space-1) var(--space-2); font-size: var(--text-xs); line-height: 1.3;
+  padding: var(--space-half) var(--space-2); font-size: var(--text-xs); line-height: 1.25;  /* fits title + time in 45 min */
   transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out),
               opacity var(--duration-fast) var(--ease-out);
 }
@@ -104,7 +104,8 @@
   font-weight: var(--weight-semibold); padding-right: var(--space-5);
   overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
-.ev-body.compact .ev-title { white-space: nowrap; display: block; }
+.ev-body.compact .ev-title,
+.ev-body.one-line .ev-title { white-space: nowrap; display: block; }   /* under ~75 min: keep the time visible */
 .ev-sub { opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 .ev.suggested .ev-title { padding-right: var(--block-actions); }
 

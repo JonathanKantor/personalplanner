@@ -38,7 +38,8 @@ def:pub EventBlock(
     onToggleDone: Callable[[str, bool], None],
     onAccept: Callable[[str], None],
     onReject: Callable[[str], None],
-    compact: bool = False                    # short block: one line
+    compact: bool = False,                   # very short / narrow block: title only
+    oneLine: bool = False                    # title kept to one line so the time shows
 ) -> JsxElement {
     kind = style_of(item);
     checkable = kind == "deadline";
@@ -48,7 +49,7 @@ def:pub EventBlock(
         e.stopPropagation();                 # don't also open the editor
     }
 
-    <div className={"ev-body" + (" compact" if compact else "")}>
+    <div className={"ev-body" + (" compact" if compact else "") + (" one-line" if oneLine else "")}>
         <div className="ev-title">{item.title}</div>
         {(not compact) and <div className="ev-sub num">{sub}</div>}
         {if checkable {

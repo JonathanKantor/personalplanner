@@ -211,7 +211,7 @@ def:pub WeekGrid(
                              onDragEnd={lambda (ev: any) { end_drag(); }}
                              onClick={lambda (ev: MouseEvent) { open_item(it, d.date); }}
                              title={it.title + " · " + subtitle_of(it) + ("\n" + it.reason if it.reason else "")}>
-                            <EventBlock item={it} compact={(e - s) < 40 or count > 1}
+                            <EventBlock item={it} compact={(e - s) < 40 or count > 1} oneLine={(e - s) < 75}
                                 onToggleDone={onToggleDone} onAccept={onAccept} onReject={onReject} />
                         </div>
                     }
