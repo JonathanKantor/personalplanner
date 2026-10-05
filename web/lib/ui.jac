@@ -32,3 +32,10 @@ def:pub hhmm(minutes: int) -> str {
     m = minutes % 60;
     return ("0" if h < 10 else "") + str(h) + ":" + ("0" if m < 10 else "") + str(m);
 }
+
+"""A stored UTC time as the local "YYYY-MM-DDTHH:MM" that <input type=datetime-local>
+expects. (The Swedish locale happens to format dates as YYYY-MM-DD HH:MM.)"""
+def:pub local_input(iso: str, tz: str) -> str {
+    d: any = new(Date, iso);  # jac:ignore[E1053]
+    return d.toLocaleString("sv-SE", {"timeZone": tz}).replace(" ", "T")[0:16];
+}

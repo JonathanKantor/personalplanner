@@ -65,8 +65,8 @@ jac run                  # server + web app at http://localhost:8000
 | Page | What it does |
 |---|---|
 | `/login` | log in or sign up (same accounts as the CLI) |
-| `/` Week | classes, events and planned blocks in one grid; **Suggest schedule**; accept ✓ / reject ✗ in the grid, or Accept / Adjust / Reject with the reason in the Suggestions list; prev/next week |
-| `/tasks` | add, edit, complete, delete tasks |
+| `/` Week | classes, events and planned blocks in one grid; **Suggest schedule**; accept ✓ / reject ✗ in the grid, or Accept / Adjust / Reject with the reason in the Suggestions list; **click** a block or a "due:" label to edit the task; **drag** a block to another time or day (snaps to 15 min, keeps its length; moving a suggestion accepts it; drops onto classes/events/other planned blocks are refused); prev/next week |
+| `/tasks` | add tasks; click a task (or Edit) to edit, complete or delete it |
 | `/settings` | preferences, Connect Google Calendar, import an `.ics` file or iCal URL, mark calendars / recurring events as classes, load demo data |
 | `/oauth/callback` | where Google returns after the consent screen; finishes the connection |
 

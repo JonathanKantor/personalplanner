@@ -1,8 +1,9 @@
-"""/tasks - add, edit, complete and delete tasks."""
+"""/tasks - add tasks, and click one to edit it (TaskEditor dialog)."""
 
 import from core.tasks { create_task, list_tasks, update_task, complete_task, delete_task }
 import from core.preferences { get_preferences }
 import type from core.models { TaskView }
+import from ...components.TaskEditor { TaskEditor }
 import from ...lib.ui { error_text }
 
 def:pub TasksPage() -> JsxPage {
@@ -11,8 +12,8 @@ def:pub TasksPage() -> JsxPage {
         error: str = "",
         notice: str = "",
         tz: str = "",
-        # form fields (also used when editing)
-        editing: str = "",
+        open_task: str = "",                 # task open in the editor dialog
+        # add-task form fields
         title: str = "",
         due: str = "",                       # "2026-10-09T17:00" from <input type=datetime-local>
         priority: str = "medium",
@@ -37,7 +38,6 @@ def:pub TasksPage() -> JsxPage {
     }
 
     def reset_form {
-        editing = "";
         title = "";
         due = "";
         priority = "medium";
@@ -45,13 +45,6 @@ def:pub TasksPage() -> JsxPage {
         course = "";
         repeat = "";
         notes = "";
-    }
-
-    """The stored due date is UTC; show it as local "YYYY-MM-DDTHH:MM" for the input."""
-    def local_input(iso: str) -> str {
-        d = new(Date, iso);
-        parts = d.toLocaleString("sv-SE", {"timeZone": tz}).replace(" ", "T");
-        return parts[0:16];
     }
 
     def local_label(iso: str) -> str {
@@ -66,34 +59,13 @@ def:pub TasksPage() -> JsxPage {
         error = "";
         notice = "";
         try {
-            if editing {
-                await update_task(editing, {
-                    "title": title, "due": due, "priority": priority,
-                    "estimated_minutes": int(minutes), "category": course,
-                    "recurrence": repeat, "notes": notes
-                });
-                notice = "Task updated.";
-            } else {
-                await create_task(title, due, priority, int(minutes), notes, course, repeat);
-                notice = "Task added. Open Week and press Suggest schedule to plan it.";
-            }
+            await create_task(title, due, priority, int(minutes), notes, course, repeat);
+            notice = "Task added. Open Week and press Suggest schedule to plan it.";
             reset_form();
         } except Exception as ex {
             error = error_text(ex);
         }
         await load();
-    }
-
-    def start_edit(t: TaskView) {
-        editing = t.id;
-        title = t.title;
-        due = local_input(t.due);
-        priority = t.priority;
-        minutes = str(t.estimated_minutes);
-        course = t.category;
-        repeat = t.recurrence;
-        notes = t.notes;
-        notice = "";
     }
 
     async def mark_done(id: str) {
@@ -115,12 +87,14 @@ def:pub TasksPage() -> JsxPage {
     }
 
     <div>
+        {open_task and <TaskEditor taskId={open_task} tz={tz}
+                onClose={lambda { open_task = ""; }} onChanged={lambda { load(); }} />}
         <h1 style={{"fontSize": "20px"}}>Tasks</h1>
         {error and <div className="error">{error}</div>}
         {notice and <div className="notice">{notice}</div>}
 
         <form className="panel" onSubmit={save}>
-            <h2>{"Edit task" if editing else "Add a task"}</h2>
+            <h2>Add a task</h2>
             <div className="form-grid">
                 <label className="field wide">Title
                     <input id="title" value={title} required={True}
@@ -153,8 +127,7 @@ def:pub TasksPage() -> JsxPage {
                 </label>
             </div>
             <div className="row" style={{"marginTop": "12px"}}>
-                <button id="save" className="btn primary" type="submit">{"Save" if editing else "Add task"}</button>
-                {editing and <button className="btn" type="button" onClick={lambda (e: MouseEvent) { reset_form(); }}>Cancel</button>}
+                <button id="save" className="btn primary" type="submit">Add task</button>
             </div>
         </form>
 
@@ -175,7 +148,7 @@ def:pub TasksPage() -> JsxPage {
                 {for t in tasks {
                     <li key={t.id}>
                         <div className="grow">
-                            <b>{t.title}</b>
+                            <b className="title-link" title="Edit task" onClick={lambda (e: MouseEvent) { open_task = t.id; }}>{t.title}</b>
                             {t.category and <span className="tag">{t.category}</span>}
                             {t.priority == "high" and <span className="tag high">high</span>}
                             {t.status == "done" and <span className="tag done">done</span>}
@@ -185,7 +158,7 @@ def:pub TasksPage() -> JsxPage {
                         </div>
                         {t.status != "done" and
                             <button className="btn small primary" onClick={lambda (e: MouseEvent) { mark_done(t.id); }}>Done</button>}
-                        <button className="btn small" onClick={lambda (e: MouseEvent) { start_edit(t); }}>Edit</button>
+                        <button className="btn small" onClick={lambda (e: MouseEvent) { open_task = t.id; }}>Edit</button>
                         <button className="btn small danger" onClick={lambda (e: MouseEvent) { remove(t.id); }}>Delete</button>
                     </li>
                 }}
