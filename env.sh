@@ -10,3 +10,11 @@ if [ -d /opt/homebrew/opt/expat/lib ]; then
 else
     echo "env.sh: Homebrew expat not found; run: brew install expat" >&2
 fi
+
+# `jac run` does not read .env by itself (verified), so export its variables
+# (e.g. GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET) into this shell.
+if [ -f .env ]; then
+    set -a
+    . ./.env
+    set +a
+fi

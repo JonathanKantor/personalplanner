@@ -10,6 +10,14 @@ import from core.tasks {
     create_task, list_tasks, get_task, update_task, complete_task, delete_task
 }
 import from core.preferences { get_preferences, update_preferences }
+import from core.calendars {
+    import_ics, import_ics_url, list_calendars, set_calendar_is_class,
+    list_series, set_series_is_class, list_events, delete_calendar
+}
+import from core.sync { sync_calendar }
+import from core.gcal {
+    google_status, google_auth_url, connect_google, disconnect_google
+}
 import from core.seed { seed_demo_data }
 
 # Client-side UI (placeholder until the web slice). JSX makes this client code.

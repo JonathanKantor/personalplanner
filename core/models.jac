@@ -121,7 +121,65 @@ node ClassSeries {
     has series_id: str;
 }
 
+"""Calendar --InCalendar--> CalendarEvent"""
 edge InCalendar {}
+
+"""The user's Google connection. One per user, attached to root. The refresh
+token lives here (per user, in the database) - never in code or in git."""
+node GoogleAccount {
+    has refresh_token: str = "",
+        oauth_state: str = "",                    # anti-forgery value for the OAuth redirect
+        connected_at: str = "";
+}
+
+"""One event occurrence as delivered by a source (.ics file or Google), before
+it is stored. Both sources produce this same shape, so the code that saves
+events (core/calendars.jac) doesn't care where they came from."""
+obj Occurrence {
+    has external_id: str,
+        series_id: str,
+        title: str,
+        start: str,                               # UTC ISO datetime
+        end: str,
+        all_day: bool;
+}
+
+obj SyncResult {
+    has calendar: str,
+        added: int = 0,
+        updated: int = 0,
+        removed: int = 0,
+        total: int = 0;
+}
+
+obj CalendarView {
+    has id: str,
+        source: str,
+        name: str,
+        is_class: bool,
+        last_synced: str,
+        event_count: int;
+}
+
+obj EventView {
+    has id: str,
+        calendar_id: str,
+        series_id: str,
+        title: str,
+        start: str,
+        end: str,
+        all_day: bool,
+        is_class: bool;
+}
+
+"""A recurring series, so the user can mark e.g. "EECS 376 Lecture" as a class."""
+obj SeriesView {
+    has series_id: str,
+        title: str,
+        calendar: str,
+        occurrences: int,
+        is_class: bool;
+}
 
 # ---------------------------------------------------------------- Scheduling
 # Filled by the scheduler (slice 3).
