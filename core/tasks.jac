@@ -1,30 +1,17 @@
 """Task endpoints: create, list, update, complete, delete.
 
-All are `def:protect` (login required; see core/preferences.jac); `root` is the caller's own root, so a task
-id belonging to someone else is simply "not found".
+All are `def:protect` (login required; see core/preferences.jac); `root` is
+the caller's own root, so a task id belonging to someone else is simply
+"not found". Any change re-plans pending suggestions (see core/planning.jac).
 """
 
 import from core.models { Task, TaskView, Priority, TaskStatus }
 import from core.timeutil { parse_due, to_iso, now_utc }
 import from core.preferences { _prefs }
-import from core.changes { check_keys, get_str, get_int }
+import from core.changes { check_keys, get_str, get_int, as_int }
+import from core.recurrence { parse_rule }
+import from core.planning { replan_if_pending, _blocks }
 
-def _view(t: Task) -> TaskView {
-    # jid(node) is the node's stable id; it survives restarts and the network.
-    return TaskView(
-        id=jid(t),
-        title=t.title,
-        notes=t.notes,
-        due=t.due,
-        priority=str(t.priority),
-        status=str(t.status),
-        estimated_minutes=t.estimated_minutes,
-        category=t.category,
-        recurrence=t.recurrence,
-        created_at=t.created_at,
-        completed_at=t.completed_at
-    );
-}
 
 """Find one of the caller's tasks by id. Only searches this user's root."""
 def _find(id: str) -> Task {
@@ -42,6 +29,14 @@ def _priority(p: str) -> Priority {
     } except ValueError {
         raise ValueError(f"priority must be low, medium, or high (got '{p}')");
     }
+}
+
+def _check_recurrence(r: str) -> str {
+    r = r.strip();
+    if r {
+        _ = parse_rule(r);          # raises ValueError explaining the format
+    }
+    return r;
 }
 
 def _check_minutes(m: int) -> int {
@@ -68,13 +63,14 @@ def:protect create_task(
         notes=notes,
         due=parse_due(due, _prefs().timezone),
         priority=_priority(priority),
-        estimated_minutes=_check_minutes(estimated_minutes),
+        estimated_minutes=_check_minutes(as_int(estimated_minutes, "estimated_minutes")),
         category=category.strip(),
-        recurrence=recurrence.strip(),
+        recurrence=_check_recurrence(recurrence),
         created_at=to_iso(now_utc())
     );
     root ++> task;                     # attach to the user's root -> persisted
-    return _view(task);
+    replan_if_pending();
+    return task.to_view();
 }
 
 """List tasks, soonest due first. `status` filters ("todo", "done", ...); ""
@@ -87,11 +83,11 @@ def:protect list_tasks(status: str = "") -> list[TaskView] {
         tasks = [t for t in tasks if str(t.status) == status];
     }
     tasks.sort(key=lambda (t: Task) { t.due; });
-    return [_view(t) for t in tasks];
+    return [t.to_view() for t in tasks];
 }
 
 def:protect get_task(id: str) -> TaskView {
-    return _view(_find(id));
+    return _find(id).to_view();
 }
 
 glob TASK_FIELDS: list[str] = [
@@ -113,6 +109,7 @@ def:protect update_task(id: str, changes: dict) -> TaskView {
     priority = _priority(get_str(changes, "priority", str(t.priority)));
     minutes = _check_minutes(get_int(changes, "estimated_minutes", t.estimated_minutes));
     status = _status(get_str(changes, "status", str(t.status)));
+    recurrence = _check_recurrence(get_str(changes, "recurrence", t.recurrence));
 
     t.title = title;
     t.due = due;
@@ -120,15 +117,17 @@ def:protect update_task(id: str, changes: dict) -> TaskView {
     t.estimated_minutes = minutes;
     t.notes = get_str(changes, "notes", t.notes);
     t.category = get_str(changes, "category", t.category).strip();
-    t.recurrence = get_str(changes, "recurrence", t.recurrence).strip();
+    t.recurrence = recurrence;
     _set_status(t, status);
-    return _view(t);
+    replan_if_pending();
+    return t.to_view();
 }
 
 def:protect complete_task(id: str) -> TaskView {
     t = _find(id);
     _set_status(t, TaskStatus.DONE);
-    return _view(t);
+    replan_if_pending();               # its pending suggestions free up
+    return t.to_view();
 }
 
 def _status(s: str) -> TaskStatus {
@@ -149,6 +148,10 @@ def _set_status(t: Task, status: TaskStatus) -> None {
 
 def:protect delete_task(id: str) -> bool {
     t = _find(id);
+    for b in _blocks(t) {
+        del b;                         # its time blocks go too
+    }
     del t;                             # deleting a node also removes its edges
+    replan_if_pending();
     return True;
 }

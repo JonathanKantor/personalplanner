@@ -62,20 +62,6 @@ obj PreferencesView {
 
 # ---------------------------------------------------------------- Tasks
 
-node Task {
-    has title: str,
-        notes: str = "",
-        due: str = "",                            # UTC ISO datetime
-        priority: Priority = Priority.MEDIUM,
-        status: TaskStatus = TaskStatus.TODO,
-        estimated_minutes: int = 60,
-        category: str = "",                       # course or category, optional
-        recurrence: str = "",                     # e.g. "WEEKLY:MO,WE"; "" = none
-        created_at: str = "",
-        completed_at: str = "",
-        is_demo: bool = False;                    # created by seed_demo_data
-}
-
 """What the API returns for a task. `id` is the node's stable graph id (jid)."""
 obj TaskView {
     has id: str,
@@ -88,8 +74,37 @@ obj TaskView {
         category: str,
         recurrence: str,
         created_at: str,
-        completed_at: str;
+        completed_at: str,
+        parent_id: str;
 }
+
+node Task {
+    has title: str,
+        notes: str = "",
+        due: str = "",                            # UTC ISO datetime
+        priority: Priority = Priority.MEDIUM,
+        status: TaskStatus = TaskStatus.TODO,
+        estimated_minutes: int = 60,
+        category: str = "",                       # course or category, optional
+        recurrence: str = "",                     # e.g. "WEEKLY:MO,WE"; "" = none
+        created_at: str = "",
+        completed_at: str = "",
+        parent_id: str = "",                      # set on later occurrences of a recurring task
+        is_demo: bool = False;                    # created by seed_demo_data
+
+    """The API shape of this task. jid(self) is the node's stable id; it
+    survives restarts and the trip over the network."""
+    def to_view -> TaskView {
+        return TaskView(
+            id=jid(self), title=self.title, notes=self.notes, due=self.due,
+            priority=str(self.priority), status=str(self.status),
+            estimated_minutes=self.estimated_minutes, category=self.category,
+            recurrence=self.recurrence, created_at=self.created_at,
+            completed_at=self.completed_at, parent_id=self.parent_id
+        );
+    }
+}
+
 
 # ---------------------------------------------------------------- Calendar
 # Filled by calendar sync (slice 2). Read-only from the planner's side.
@@ -195,3 +210,52 @@ node TimeBlock {
 
 """Task --ScheduledAs--> TimeBlock (a task can have several blocks)."""
 edge ScheduledAs {}
+
+obj BlockView {
+    has id: str,
+        task_id: str,
+        task_title: str,
+        category: str,
+        priority: str,
+        start: str,
+        end: str,
+        status: str,
+        reason: str,
+        session: int,
+        sessions_total: int;
+}
+
+"""A task (or the part of one) the scheduler could not fit, and why."""
+obj UnscheduledView {
+    has task_id: str,
+        title: str,
+        minutes_needed: int,
+        minutes_placed: int,
+        reason: str;
+}
+
+obj PlanView {
+    has window_start: str,
+        window_end: str,
+        suggestions: list[BlockView],
+        unscheduled: list[UnscheduledView];
+}
+
+"""Everything for a date range: calendar events, planned blocks, tasks due."""
+obj AgendaView {
+    has start: str,
+        end: str,
+        timezone: str,
+        events: list[EventView],
+        blocks: list[BlockView],
+        due: list[TaskView];
+}
+
+obj ProgressView {
+    has week_start: str,
+        tasks_done: int,
+        tasks_open: int,
+        tasks_overdue: int,
+        minutes_planned: int,                     # accepted blocks this week
+        minutes_completed: int;                   # accepted blocks of finished tasks
+}

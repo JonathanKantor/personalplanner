@@ -26,6 +26,10 @@ typescript = "^5.3.3"
 
 
 
+# `jac test` runs everything: unit tests (core/*.test.jac) and endpoint tests.
+[test]
+directories = ["core", "tests"]
+
 [dev-dependencies]
 watchdog = ">=3.0.0"
 

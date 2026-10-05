@@ -18,6 +18,10 @@ import from core.sync { sync_calendar }
 import from core.gcal {
     google_status, google_auth_url, connect_google, disconnect_google
 }
+import from core.planning {
+    suggest_schedule, list_blocks, accept_block, reject_block, accept_all,
+    adjust_block, get_agenda, get_today, get_progress
+}
 import from core.seed { seed_demo_data }
 
 # Client-side UI (placeholder until the web slice). JSX makes this client code.

@@ -7,8 +7,8 @@ for the week, and recommends time slots around your classes.
 One backend serves four clients: a web app, a mobile app, a CLI, and the HTTP
 API itself.
 
-> Status: slices 1–2 done (server, tasks, preferences, calendar import/sync).
-> Scheduler, CLI, web UI, and mobile app are in progress.
+> Status: slices 1–3 done (server, tasks, preferences, calendar import/sync,
+> scheduler). CLI, web UI, and mobile app are in progress.
 
 ## Setup
 
@@ -57,7 +57,7 @@ jac run                  # server + web app at http://localhost:8000
 ```
 
 - API docs (every endpoint, try them in the browser): http://localhost:8000/docs
-- Run tests: `jac test core/ics.jac`, `jac test core/gcal.jac`, `jac test tests/`
+- Run all tests: `jac test` (one file: `jac test core/scheduler.jac`)
 
 ### Demo data (no Google account needed)
 
@@ -84,6 +84,39 @@ Treat that URL like a password.
 Marking classes: mark a whole calendar with `set_calendar_is_class`, or one
 recurring series (e.g. "EECS 376 Lecture", listed by `list_series`) with
 `set_series_is_class`. Events are synced from 7 days ago to 120 days ahead.
+
+## Scheduling
+
+`suggest_schedule(days=7)` plans the next 1–28 days and returns suggested
+blocks, each with a reason, plus any task that didn't fit and why:
+
+```
+Mon 13:30-15:30  Problem set 4   Free 1:30pm-6pm Monday, due Tuesday 11pm, high priority (session 1 of 3)
+NOT PLACED  Rewrite thesis: Only 165 of 900 min fit before Tuesday 12pm: the 240-min daily focus limit is reached
+```
+
+How it works (`core/scheduler.jac`, deterministic, 24 tests):
+
+1. **Free time** = working hours on working days − calendar events − accepted
+   blocks, keeping the minimum break around each. All-day events don't block.
+2. **Order**: earliest due date, then higher priority, then shorter task.
+3. **Placement**: earliest free time before the deadline, trying your
+   preferred study window first each day. Sessions are 30–120 min (long tasks
+   are split), and the daily focus cap is never exceeded.
+4. **Can't fit**: the part that fits is still suggested; the rest is reported
+   with the reason (deadline passed, daily cap, or no free time).
+
+Then `accept_block`, `reject_block`, `adjust_block(id, start, end)` (also
+accepts; refuses clashes), or `accept_all`. Re-planning never moves accepted
+blocks, and a rejected slot isn't offered to that task again. Adding, changing,
+completing or deleting a task (or changing preferences) automatically
+re-plans any pending suggestions.
+
+Recurring tasks: `recurrence` is `DAILY` or `WEEKLY:MO,WE` (optionally
+`;UNTIL=2026-12-15`). Each occurrence becomes its own task when planning.
+
+Views: `get_today`, `get_agenda(start, days)` (events + blocks + due tasks),
+`get_progress` (this week's numbers).
 
 ### Google Calendar setup (OAuth)
 
@@ -128,6 +161,9 @@ core/             shared backend (no UI)
   gcal.jac          Google OAuth + sync
   calendars.jac     storing events, class marking, calendar endpoints
   sync.jac          sync_calendar over all sources
+  scheduler.jac     the scheduling algorithm (pure, no database)
+  recurrence.jac    recurring-task rules (pure)
+  planning.jac      runs the scheduler on your data; accept/reject/adjust; views
   seed.jac          demo data
   *.test.jac        unit tests for the module of the same name
 web/              the web app; its main.jac registers every endpoint
@@ -141,8 +177,12 @@ tests/            end-to-end endpoint tests
   query is automatically scoped to that user. (`:priv` needs the same login but
   stops other files from importing the function, which the entry module must
   do to register it.)
-- **Optional endpoint parameters**: in jac 0.37.14 an omitted
-  `x: str | None = None` parameter arrives as the string `"None"`. Update
-  endpoints therefore take a `changes` dict of only the fields to change.
+- **Omitted endpoint parameters**: in jac 0.37.14, when a caller leaves out a
+  parameter that has a default, it arrives as the *string* of the default
+  (`None` -> `"None"`, `7` -> `"7"`, `False` -> `"False"`). Only `str`
+  defaults are safe. Update endpoints take a `changes` dict instead, and int
+  parameters go through `as_int` (see `core/changes.jac`).
+- **Test annexes**: a `glob` in a `*.test.jac` file runs before the module's
+  own declarations exist; use a function instead.
 - **Module names**: don't name a module after a Python standard-library
   module (e.g. `calendar.jac`); it shadows the real one during `jac test`.

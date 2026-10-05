@@ -92,5 +92,8 @@ def:protect update_preferences(changes: dict) -> PreferencesView {
     p.preferred_end = pref_end;
     p.min_break_minutes = gap;
     p.max_focus_minutes_per_day = cap;
+    # Imported here, not at the top: core.planning imports this module.
+    import from core.planning { replan_if_pending }
+    replan_if_pending();
     return _view(p);
 }

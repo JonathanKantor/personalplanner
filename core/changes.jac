@@ -1,11 +1,29 @@
-"""Reading a partial-update `changes` dict safely.
+"""Input helpers that work around a jac 0.37.14 endpoint quirk.
 
-Why update endpoints take `changes: dict` instead of optional parameters:
-in jac 0.37.14 an omitted `x: str | None = None` endpoint parameter arrives as
-the STRING "None" rather than None (verified with a probe endpoint), so
-"was this field sent?" can't be answered from optional parameters. A dict
-holding only the fields to change answers it directly.
+Verified with probe endpoints: when a caller OMITS a parameter that has a
+default, the server passes the default converted to a string:
+    x: str | None = None   ->  "None"
+    n: int = 7             ->  "7"
+    b: bool = False        ->  "False"   (which is truthy!)
+Only `str` defaults arrive intact. Hence:
+- update endpoints take a `changes: dict` holding only the fields to change;
+- int parameters with defaults go through `as_int`.
 """
+
+"""Accept an int, or a numeric string (an omitted default arrives as one)."""
+def as_int(value: any, name: str) -> int {
+    if isinstance(value, bool) {
+        raise ValueError(f"{name} must be a whole number");
+    }
+    if isinstance(value, int) {
+        return value;
+    }
+    try {
+        return int(str(value));
+    } except ValueError {
+        raise ValueError(f"{name} must be a whole number");
+    }
+}
 
 """Reject keys we don't know, so typos fail loudly instead of being ignored."""
 def check_keys(changes: dict, allowed: list[str]) -> None {
