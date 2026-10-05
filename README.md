@@ -7,7 +7,7 @@ for the week, and recommends time slots around your classes.
 One backend serves four clients: a web app, a mobile app, a CLI, and the HTTP
 API itself.
 
-> Status: server, scheduler and CLI done. Web UI and mobile app are in progress.
+> Status: server, scheduler, CLI and web app done. Mobile app in progress.
 
 ## Setup
 
@@ -55,8 +55,24 @@ source env.sh
 jac run                  # server + web app at http://localhost:8000
 ```
 
+- Web app: http://localhost:8000 (sign up, then Settings -> "Load demo classes
+  and tasks", then Week -> "Suggest schedule")
 - API docs (every endpoint, try them in the browser): http://localhost:8000/docs
 - Run all tests: `jac test` (one file: `jac test core/scheduler.jac`)
+
+### Web app
+
+| Page | What it does |
+|---|---|
+| `/login` | log in or sign up (same accounts as the CLI) |
+| `/` Week | classes, events and planned blocks in one grid; **Suggest schedule**; accept ✓ / reject ✗ in the grid, or Accept / Adjust / Reject with the reason in the Suggestions list; prev/next week |
+| `/tasks` | add, edit, complete, delete tasks |
+| `/settings` | preferences, Connect Google Calendar, import an `.ics` file or iCal URL, mark calendars / recurring events as classes, load demo data |
+| `/oauth/callback` | where Google returns after the consent screen; finishes the connection |
+
+The pages call server functions directly (`await suggest_schedule(7)`); Jac
+generates the HTTP calls. Times are converted to your timezone on the server
+(`core/views.jac`), so the browser does no timezone math.
 
 ### CLI
 
@@ -195,10 +211,16 @@ core/             shared backend (no UI)
   sync.jac          sync_calendar over all sources
   scheduler.jac     the scheduling algorithm (pure, no database)
   recurrence.jac    recurring-task rules (pure)
-  planning.jac      runs the scheduler on your data; accept/reject/adjust; views
+  planner.jac       runs the scheduler on your stored data (engine glue)
+  planning.jac      planning endpoints: suggest/accept/reject/adjust, agenda, progress
+  views.jac         ready-to-draw day/week views in your timezone (web + mobile)
   seed.jac          demo data
   *.test.jac        unit tests for the module of the same name
 web/              the web app; its main.jac registers every endpoint
+  pages/            one file per URL (file-based routing); (auth)/ = login required
+  components/       WeekGrid.jac
+  lib/ui.jac        error-message and time helpers
+  styles/global.css
 cli/              the `plan` command (talks to the server over HTTP)
   api.jac           HTTP calls + login token storage
   commands.jac      one function per command
@@ -221,5 +243,16 @@ tests/            end-to-end endpoint tests
   parameters go through `as_int` (see `core/changes.jac`).
 - **Test annexes**: a `glob` in a `*.test.jac` file runs before the module's
   own declarations exist; use a function instead.
+- **Server anchors**: Jac decides per module whether code also goes to the
+  browser. A module of pure Jac (no Python import) that pages import endpoints
+  from gets compiled for the browser too, and its imports of server-only
+  helpers then break the build (E5082). Each endpoint module therefore has a
+  Python import, commented as a "server anchor".
+- **Client imports of server types** use `import type from core.models {...}`;
+  a plain import duplicates the class the generated RPC stub already defines.
+- **Don't pin endpoint modules** in `[placement.pins]`: in 0.37.14 a pinned
+  endpoint's browser stub loses its parameters (calls arrive with no arguments).
+- **`jacLogin(username, password)`**: the bundled client-auth guide says
+  `email`, but usernames work (verified); the CLI and web share accounts.
 - **Module names**: don't name a module after a Python standard-library
   module (e.g. `calendar.jac`); it shadows the real one during `jac test`.

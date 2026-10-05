@@ -4,6 +4,8 @@ Lives in its own module because it needs both core.calendars (iCal URLs) and
 core.gcal (Google), and core.gcal already imports core.calendars.
 """
 
+# Server anchor: see the note in core/tasks.jac.
+import os;
 import from core.models { SyncResult }
 import from core.calendars { _calendars, _sync_ics_text, _fetch_ics }
 import from core.gcal { _sync_google_calendar }

@@ -5,12 +5,18 @@ the caller's own root, so a task id belonging to someone else is simply
 "not found". Any change re-plans pending suggestions (see core/planning.jac).
 """
 
-import from core.models { Task, TaskView, Priority, TaskStatus }
+# Server anchor. Jac decides per module whether code also runs in the
+# browser; a Python import marks the module as server code. Without one, this
+# pure-Jac module (which web pages import endpoints from) is also compiled for
+# the browser, and its imports of server-only helpers break that build
+# (jac 0.37.14; see README "Jac notes"). `os` itself isn't otherwise used.
+import os;
+import from core.models { Task, TaskView, Priority, TaskStatus, TimeBlock, ScheduledAs }
 import from core.timeutil { parse_due, to_iso, now_utc }
 import from core.preferences { _prefs }
 import from core.changes { check_keys, get_str, get_int, as_int }
 import from core.recurrence { parse_rule }
-import from core.planning { replan_if_pending, _blocks }
+import from core.planner { replan_if_pending }
 
 
 """Find one of the caller's tasks by id. Only searches this user's root."""
@@ -148,7 +154,7 @@ def _set_status(t: Task, status: TaskStatus) -> None {
 
 def:protect delete_task(id: str) -> bool {
     t = _find(id);
-    for b in _blocks(t) {
+    for b in [t ->:ScheduledAs:->][?:TimeBlock] {
         del b;                         # its time blocks go too
     }
     del t;                             # deleting a node also removes its edges

@@ -22,12 +22,16 @@ import from core.planning {
     suggest_schedule, list_blocks, accept_block, reject_block, accept_all,
     adjust_block, get_agenda, get_today, get_progress
 }
+import from core.views { get_week_view, get_day_view }
 import from core.seed { seed_demo_data }
 
-# Client-side UI (placeholder until the web slice). JSX makes this client code.
+# ---------------------------------------------------------------- client
+# Everything below is browser code: JSX and the CSS import mark it "client".
+# Pages live in web/pages/ (file-based routing: the file path is the URL).
+# `app` wraps every page; `children` is the page the router picked.
 
-import from .frontend { app as ClientApp }
+import ".styles.global.css";
 
-def:pub app -> JsxElement {
-    <ClientApp/>
+def:pub app(children: any) -> JsxElement {
+    <>{children}</>
 }

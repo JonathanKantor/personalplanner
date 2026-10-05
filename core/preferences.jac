@@ -8,6 +8,12 @@ the function, which web/main.jac needs in order to register it.
 `def:pub` would allow anonymous callers, so it is never used for user data.)
 """
 
+# Server anchor. Jac decides per module whether code also runs in the
+# browser; a Python import marks the module as server code. Without one, this
+# pure-Jac module (which web pages import endpoints from) is also compiled for
+# the browser, and its imports of server-only helpers break that build
+# (jac 0.37.14; see README "Jac notes"). `os` itself isn't otherwise used.
+import os;
 import from core.models { Preferences, PreferencesView }
 import from core.timeutil { zone, parse_hhmm }
 import from core.changes { check_keys, get_str, get_int, get_str_list }
@@ -93,7 +99,7 @@ def:protect update_preferences(changes: dict) -> PreferencesView {
     p.min_break_minutes = gap;
     p.max_focus_minutes_per_day = cap;
     # Imported here, not at the top: core.planning imports this module.
-    import from core.planning { replan_if_pending }
+    import from core.planner { replan_if_pending }
     replan_if_pending();
     return _view(p);
 }

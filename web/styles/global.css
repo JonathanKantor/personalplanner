@@ -1,0 +1,119 @@
+/* Planner web app - one global stylesheet, imported once in web/main.jac. */
+
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --text: #1d2330;
+  --muted: #667085;
+  --line: #e3e6eb;
+  --accent: #3b5bdb;
+  --class-bg: #dbe4ff;
+  --class-fg: #26387a;
+  --event-bg: #eceef2;
+  --event-fg: #3d4452;
+  --plan-bg: #d3f2df;
+  --plan-fg: #17613a;
+  --suggest-bg: #fff4d6;
+  --suggest-fg: #7a5600;
+  --danger: #c92a2a;
+  --hour: 48px;           /* height of one hour in the week grid */
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+button, input, select, textarea { font: inherit; }
+a { color: var(--accent); }
+
+/* ---------------------------------------------------------------- shell */
+.topbar {
+  display: flex; align-items: center; gap: 4px;
+  padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 10;
+}
+.brand { font-weight: 700; margin-right: 16px; }
+.navlink { padding: 6px 12px; border-radius: 6px; text-decoration: none; color: var(--text); }
+.navlink.active { background: var(--class-bg); color: var(--class-fg); }
+.spacer { flex: 1; }
+.page { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+/* ---------------------------------------------------------------- controls */
+.btn {
+  border: 1px solid var(--line); background: var(--panel); color: var(--text);
+  padding: 6px 12px; border-radius: 6px; cursor: pointer;
+}
+.btn:hover { border-color: #c5cad3; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+.btn.small { padding: 2px 8px; font-size: 12px; }
+.btn.danger { color: var(--danger); }
+.btn:disabled { opacity: .5; cursor: default; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.panel h2 { margin: 0 0 12px; font-size: 16px; }
+.muted { color: var(--muted); }
+.error { background: #fff0f0; color: var(--danger); border: 1px solid #ffc9c9; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; }
+.notice { background: #eef6ff; border: 1px solid #c8defa; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; }
+
+label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+label.field input, label.field select, label.field textarea {
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--text); background: white;
+}
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; align-items: end; }
+.form-grid .wide { grid-column: span 2; }
+
+/* ---------------------------------------------------------------- login */
+.auth { max-width: 340px; margin: 12vh auto; }
+.auth form { display: flex; flex-direction: column; gap: 12px; }
+
+/* ---------------------------------------------------------------- week grid */
+.week-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.week-head h1 { font-size: 20px; margin: 0 8px 0 0; }
+.legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+.legend .l-class::before { background: var(--class-bg); }
+.legend .l-event::before { background: var(--event-bg); }
+.legend .l-plan::before { background: var(--plan-bg); }
+.legend .l-suggest::before { background: var(--suggest-bg); border: 1px dashed var(--suggest-fg); }
+
+.week { display: grid; grid-template-columns: 52px repeat(7, 1fr); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.week .dayhead { padding: 8px; border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); font-weight: 600; min-height: 56px; }
+.week .dayhead.today { color: var(--accent); }
+.week .dayhead.off { color: var(--muted); font-weight: 400; }
+.week .allday { font-size: 11px; font-weight: 400; background: var(--event-bg); border-radius: 4px; padding: 1px 4px; margin-top: 4px; }
+.week .due { font-size: 11px; font-weight: 400; color: var(--danger); margin-top: 2px; }
+.week .gutter { position: relative; border-right: 1px solid var(--line); }
+.week .gutter div { position: absolute; right: 6px; font-size: 11px; color: var(--muted); transform: translateY(-50%); }
+.week .col {
+  position: relative; border-left: 1px solid var(--line);
+  background-image: repeating-linear-gradient(to bottom, var(--line) 0, var(--line) 1px, transparent 1px, transparent var(--hour));
+}
+.week .col.off { background-color: #fafafa; }
+.item {
+  position: absolute; left: 3px; right: 3px; border-radius: 6px; padding: 2px 6px;
+  font-size: 12px; overflow: hidden; line-height: 1.25;
+}
+.item .t { font-weight: 600; }
+.item.short { display: flex; gap: 6px; white-space: nowrap; }   /* < 45 min: title and time on one line */
+.item.short .t { overflow: hidden; text-overflow: ellipsis; }
+.item.class { background: var(--class-bg); color: var(--class-fg); }
+.item.event { background: var(--event-bg); color: var(--event-fg); }
+.item.accepted { background: var(--plan-bg); color: var(--plan-fg); }
+.item.suggested { background: var(--suggest-bg); color: var(--suggest-fg); border: 1px dashed var(--suggest-fg); padding-right: 48px; }  /* room for ✓ ✗ */
+.item.short > div:not(.acts) { overflow: hidden; text-overflow: ellipsis; }
+.item .acts { position: absolute; top: 2px; right: 3px; display: flex; gap: 2px; }
+.item .acts button { border: none; border-radius: 4px; padding: 0 5px; cursor: pointer; font-size: 12px; }
+
+/* ---------------------------------------------------------------- lists */
+.list { list-style: none; padding: 0; margin: 0; }
+.list li { padding: 10px 0; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-start; }
+.list li:last-child { border-bottom: none; }
+.list .grow { flex: 1; }
+.tag { font-size: 11px; padding: 1px 6px; border-radius: 10px; background: var(--event-bg); color: var(--event-fg); margin-left: 6px; }
+.tag.high { background: #ffe3e3; color: var(--danger); }
+.tag.done { background: var(--plan-bg); color: var(--plan-fg); }
+.reason { font-size: 12px; color: var(--muted); }
+.unscheduled li { color: var(--danger); }

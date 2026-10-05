@@ -45,6 +45,11 @@ jac-client-node = "1.0.7"
 [apps.web.dependencies.npm.dev]
 "@jac-client/dev-deps" = "1.0.0"
 
+# Where code runs. Jac infers server vs browser placement; a pin overrides it.
+# web/lib/ui.jac is browser helper code with nothing that marks it as such.
+[placement.pins]
+"web.lib.ui" = "client"
+
 # The planner doesn't use Jac's built-in admin portal. Disabling it also stops
 # the server from creating an "admin" account with a default password.
 [scale.admin]

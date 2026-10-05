@@ -259,3 +259,42 @@ obj ProgressView {
         minutes_planned: int,                     # accepted blocks this week
         minutes_completed: int;                   # accepted blocks of finished tasks
 }
+
+# ---------------------------------------------------------------- client views
+# Pre-computed in the user's timezone by core/views.jac so clients only draw.
+
+"""One thing on a day: a class, another event, or a planned block."""
+obj DayItem {
+    has id: str,
+        kind: str,                 # "class" | "event" | "block"
+        title: str,
+        all_day: bool,
+        start_label: str,          # "2:30pm"
+        end_label: str,
+        start_min: int,            # minutes from local midnight
+        end_min: int,
+        status: str = "",          # blocks: "suggested" | "accepted"
+        reason: str = "",
+        task_id: str = "";
+}
+
+obj DayView {
+    has date: str,                 # local YYYY-MM-DD
+        label: str,                # "Mon Oct 5"
+        is_today: bool,
+        is_day_off: bool,
+        items: list[DayItem],
+        due: list[TaskView];
+}
+
+obj WeekView {
+    has start: str,
+        prev_start: str,
+        next_start: str,
+        label: str,
+        timezone: str,
+        work_start_min: int,
+        work_end_min: int,
+        days: list[DayView],
+        suggested_count: int;
+}
