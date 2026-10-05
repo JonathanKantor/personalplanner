@@ -134,7 +134,7 @@ def:pub CanvasPage() -> JsxPage {
     chosen = len([r for r in rows if r.picked and r.status != "imported"]);
 
     <div>
-        <h1 style={{"fontSize": "20px"}}>Import from Canvas</h1>
+        <h1 style={{"fontSize": "var(--text-xl)"}}>Import from Canvas</h1>
         {error and <div className="error">{error}</div>}
         {notice and <div className="notice">{notice}</div>}
 
@@ -142,7 +142,7 @@ def:pub CanvasPage() -> JsxPage {
             <h2>Canvas calendar feed</h2>
             <p className="muted">In Canvas, open Calendar and click "Calendar Feed" (bottom right). Copy the link and paste it here. It's private to you, so treat it like a password.</p>
             <div className="row">
-                <input id="feed-url" style={{"flex": "1", "padding": "6px 8px", "border": "1px solid #e3e6eb", "borderRadius": "6px"}}
+                <input id="feed-url" style={{"flex": "1", "padding": "var(--space-2) var(--space-3)", "border": "1px solid var(--color-border-strong)", "borderRadius": "var(--radius-control)"}}
                     placeholder="https://umich.instructure.com/feeds/calendars/user_....ics"
                     value={url} onChange={lambda (e: ChangeEvent) { url = e.target.value; }} />
                 <button id="load" className="btn primary" onClick={load} disabled={busy or not url}>{"Sync" if loaded else "Load assignments"}</button>
@@ -151,11 +151,11 @@ def:pub CanvasPage() -> JsxPage {
 
         {if loaded {
             <div className="panel">
-                <div className="row" style={{"marginBottom": "8px"}}>
+                <div className="row" style={{"marginBottom": "var(--space-2)"}}>
                     <h2 style={{"margin": "0"}}>Assignments</h2>
                     <span className="spacer"></span>
                     <span className="muted">Estimate for all ticked:</span>
-                    <input type="number" min="5" max="1440" step="5" value={bulk} style={{"width": "70px"}}
+                    <input type="number" min="5" max="1440" step="5" value={bulk} style={{"width": "var(--field-xs)"}}
                         onChange={lambda (e: ChangeEvent) { bulk = e.target.value; }} />
                     <button className="btn small" onClick={apply_bulk}>Apply</button>
                 </div>
@@ -176,7 +176,7 @@ def:pub CanvasPage() -> JsxPage {
                                 </div>
                                 <div className="row reason">
                                     <span>due {due_label(r.due)}</span>
-                                    <input value={r.course} placeholder="course" style={{"width": "110px"}}
+                                    <input value={r.course} placeholder="course" style={{"width": "var(--field-sm)"}}
                                         disabled={r.status == "imported"}
                                         onChange={lambda (e: ChangeEvent) { edit(r.uid, "course", e.target.value); }} />
                                 </div>
@@ -187,8 +187,8 @@ def:pub CanvasPage() -> JsxPage {
                                     <option value="medium">Medium</option>
                                     <option value="low">Low</option>
                                 </select>
-                                <div className="row" style={{"gap": "4px"}}>
-                                    <input className="est" type="number" min="5" max="1440" step="5" value={r.minutes} style={{"width": "64px"}}
+                                <div className="row" style={{"gap": "var(--space-1)"}}>
+                                    <input className="est" type="number" min="5" max="1440" step="5" value={r.minutes} style={{"width": "var(--field-xs)"}}
                                         onChange={lambda (e: ChangeEvent) { edit(r.uid, "minutes", e.target.value); }} />
                                     <span className="muted">min</span>
                                     {for m in QUICK_MINUTES {
@@ -200,7 +200,7 @@ def:pub CanvasPage() -> JsxPage {
                         </li>
                     }}
                 </ul>
-                <div className="row" style={{"marginTop": "12px"}}>
+                <div className="row" style={{"marginTop": "var(--space-3)"}}>
                     <button id="import" className="btn primary" onClick={do_import} disabled={busy or chosen == 0}>Import {str(chosen)} task(s)</button>
                     <span className="muted">Unticked assignments are remembered as skipped. Due dates always come from Canvas.</span>
                 </div>

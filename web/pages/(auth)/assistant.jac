@@ -83,16 +83,16 @@ def:pub AssistantPage() -> JsxPage {
         }
     }
 
-    <div style={{"maxWidth": "780px", "margin": "0 auto"}}>
-        <div className="row" style={{"marginBottom": "8px"}}>
-            <h1 style={{"fontSize": "20px", "margin": "0"}}>Planning assistant</h1>
+    <div style={{"maxWidth": "var(--narrow-width)", "margin": "0 auto"}}>
+        <div className="row" style={{"marginBottom": "var(--space-2)"}}>
+            <h1 style={{"fontSize": "var(--text-xl)", "margin": "0"}}>Planning assistant</h1>
             <span className="spacer"></span>
-            <span className="muted" style={{"fontSize": "12px"}}>{model}</span>
+            <span className="muted" style={{"fontSize": "var(--text-sm)"}}>{model}</span>
             <button className="btn small" onClick={new_chat} disabled={busy}>New chat</button>
         </div>
         {(not configured) and <div className="error">The assistant needs a free Gemini key: add GEMINI_API_KEY to .env and restart the server (see README).</div>}
 
-        <div className="panel" style={{"minHeight": "320px"}}>
+        <div className="panel" style={{"minHeight": "var(--chat-min-height)"}}>
             {if len(messages) == 0 {
                 <div>
                     <p className="muted">Ask about your schedule, or have it plan and change things for you. It uses your real calendar and the planner's scheduler, and lists everything it changes. Try:</p>
@@ -120,7 +120,7 @@ def:pub AssistantPage() -> JsxPage {
         {error and <div className="error">{error}</div>}
 
         <form className="row" onSubmit={send}>
-            <input id="chat-input" style={{"flex": "1", "padding": "10px 12px", "border": "1px solid #e3e6eb", "borderRadius": "8px"}}
+            <input id="chat-input" style={{"flex": "1", "padding": "var(--space-3)", "border": "1px solid var(--color-border-strong)", "borderRadius": "var(--radius-control)"}}
                 placeholder="e.g. Fit 3 hours of studying for my midterm before Thursday"
                 value={draft} onChange={lambda (e: ChangeEvent) { draft = e.target.value; }} disabled={busy} />
             <button id="send" className="btn primary" type="submit" disabled={busy or not draft.strip()}>Send</button>

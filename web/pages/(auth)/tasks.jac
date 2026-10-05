@@ -89,7 +89,7 @@ def:pub TasksPage() -> JsxPage {
     <div>
         {open_task and <TaskEditor taskId={open_task} tz={tz}
                 onClose={lambda { open_task = ""; }} onChanged={lambda { load(); }} />}
-        <h1 style={{"fontSize": "20px"}}>Tasks</h1>
+        <h1 style={{"fontSize": "var(--text-xl)"}}>Tasks</h1>
         {error and <div className="error">{error}</div>}
         {notice and <div className="notice">{notice}</div>}
 
@@ -126,13 +126,13 @@ def:pub TasksPage() -> JsxPage {
                     <input id="notes" value={notes} onChange={lambda (e: ChangeEvent) { notes = e.target.value; }} />
                 </label>
             </div>
-            <div className="row" style={{"marginTop": "12px"}}>
+            <div className="row" style={{"marginTop": "var(--space-3)"}}>
                 <button id="save" className="btn primary" type="submit">Add task</button>
             </div>
         </form>
 
         <div className="panel">
-            <div className="row" style={{"marginBottom": "8px"}}>
+            <div className="row" style={{"marginBottom": "var(--space-2)"}}>
                 <h2 style={{"margin": "0"}}>{"All tasks" if show_done else "Open tasks"}</h2>
                 <span className="spacer"></span>
                 <label className="row muted">

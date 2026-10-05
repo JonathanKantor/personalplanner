@@ -72,7 +72,7 @@ def:pub EventEditor(
 
     <div className="modal-backdrop" onClick={lambda (e: MouseEvent) { onClose(); }}>
         <div className="modal panel" onClick={stop}>
-            <div className="row" style={{"marginBottom": "8px"}}>
+            <div className="row" style={{"marginBottom": "var(--space-2)"}}>
                 <h2 style={{"margin": "0"}}>{"Edit event" if item else "Add event"}</h2>
                 <span className="spacer"></span>
                 <button className="btn small" onClick={lambda (e: MouseEvent) { onClose(); }}>Close</button>
@@ -95,12 +95,12 @@ def:pub EventEditor(
                 </label>
             </div>
             {if not item {
-                <div className="row" style={{"marginTop": "12px"}}>
+                <div className="row" style={{"marginTop": "var(--space-3)"}}>
                     <label className="row">
                         <input id="event-weekly" type="checkbox" checked={weekly} onChange={lambda (e: ChangeEvent) { weekly = e.target.checked; }} />
                         Repeat weekly for
                     </label>
-                    <input type="number" min="2" max="30" value={weeks} style={{"width": "60px"}} disabled={not weekly}
+                    <input type="number" min="2" max="30" value={weeks} style={{"width": "var(--field-xs)"}} disabled={not weekly}
                         onChange={lambda (e: ChangeEvent) { weeks = e.target.value; }} />
                     <span className="muted">weeks</span>
                     <span className="spacer"></span>
@@ -110,7 +110,7 @@ def:pub EventEditor(
                     </label>
                 </div>
             }}
-            <div className="row" style={{"marginTop": "12px"}}>
+            <div className="row" style={{"marginTop": "var(--space-3)"}}>
                 <button id="event-save" className="btn primary" onClick={save} disabled={busy or not title.strip()}>{"Save" if item else "Add event"}</button>
                 <span className="spacer"></span>
                 {item and <button className="btn danger" onClick={lambda (e: MouseEvent) { remove(False); }}>Delete</button>}

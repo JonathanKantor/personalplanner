@@ -1,0 +1,112 @@
+/* morrow design tokens: the ONE place design values live.
+   Every other stylesheet and inline style refers to these variables. */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  /* ---- surfaces */
+  --color-bg: #FBF6EF;                       /* warm cream page */
+  --color-bg-dot: rgba(31, 26, 23, 0.07);    /* faint dot grid on the page */
+  --color-surface: #FFFFFF;                  /* cards */
+  --color-surface-sunken: #F8F2EA;           /* inset areas, day-off columns */
+  --color-border: #EFE6DA;                   /* 1px warm-gray borders */
+  --color-border-strong: #E3D7C8;            /* hover / input borders */
+  --color-gridline: #F3ECE2;                 /* calendar hour lines */
+  --color-overlay: rgba(31, 26, 23, 0.32);   /* behind dialogs */
+
+  /* ---- text */
+  --color-text: #1F1A17;                     /* near-black, warm */
+  --color-text-muted: #7A6E64;               /* secondary */
+  --color-text-subtle: #A6998C;              /* tertiary: hour labels, hints */
+
+  /* ---- accent (terracotta) */
+  --color-accent: #C8573E;
+  --color-accent-hover: #B54C35;
+  --color-accent-tint: #FBE5DB;              /* peach: active states */
+  --color-accent-ink: #9C3F2A;               /* text on peach */
+  --color-on-accent: #FFFFFF;
+
+  /* ---- semantic calendar colours: bg tint, 2px left border, text */
+  --class-bg: #E4ECF8;     --class-border: #7C9BD1;     --class-text: #2E4877;
+  --deadline-bg: #F8D9CE;  --deadline-border: #D4745A;  --deadline-text: #8A3B27;
+  --focus-bg: #F9EBC8;     --focus-border: #D9A93A;     --focus-text: #765714;
+  --event-bg: #F1ECE5;     --event-border: #BCAE9F;     --event-text: #4E453E;  /* other meetings */
+
+  /* ---- feedback */
+  --color-danger: #B4412E;
+  --color-danger-tint: #FBE4DE;
+  --color-success: #3E7C4F;
+  --color-success-tint: #E2F0E5;
+  --color-info-tint: #F3EEE6;
+
+  /* ---- type */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --text-2xs: 10px;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --leading-tight: 1.15;
+  --leading-normal: 1.45;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --tracking-tight: -0.02em;                 /* headings */
+  --tracking-eyebrow: 0.08em;                /* small uppercase labels */
+
+  /* ---- spacing (4px scale) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ---- radii */
+  --radius-card: 16px;
+  --radius-control: 10px;                    /* buttons, inputs */
+  --radius-block: 8px;                       /* calendar blocks */
+  --radius-pill: 999px;
+
+  /* ---- shadows (soft, low opacity) */
+  --shadow-card: 0 1px 2px rgba(31, 26, 23, 0.04), 0 4px 16px rgba(31, 26, 23, 0.04);
+  --shadow-lift: 0 2px 4px rgba(31, 26, 23, 0.06), 0 8px 20px rgba(31, 26, 23, 0.08);
+  --shadow-pop: 0 12px 40px rgba(31, 26, 23, 0.16);
+  --focus-ring: 0 0 0 3px rgba(200, 87, 62, 0.35);
+
+  /* ---- motion */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration: 200ms;
+
+  /* ---- layout sizes */
+  --hour: 48px;                              /* one hour in the calendar grid */
+  --rail-width: 72px;
+  --sidebar-width: 290px;
+  --content-max: 1320px;
+  --dialog-width: 640px;
+  --narrow-width: 780px;
+  --field-xs: 64px;                          /* small number inputs */
+  --field-sm: 110px;
+  --field-min: 160px;                        /* form grid column minimum */
+  --gutter-width: 52px;                      /* calendar hour labels */
+  --dayhead-height: 56px;
+  --auth-width: 340px;
+  --swatch: 10px;                            /* legend squares */
+  --block-actions: 48px;                     /* room for the ✓ ✗ on suggested blocks */
+  --chat-min-height: 320px;
+}
+
+/* Respect "reduce motion": no transitions or animated movement. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration: 0ms;
+  }
+}

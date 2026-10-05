@@ -90,7 +90,7 @@ def:pub TaskEditor(
 
     <div className="modal-backdrop" onClick={lambda (e: MouseEvent) { onClose(); }}>
         <div className="modal panel" onClick={stop}>
-            <div className="row" style={{"marginBottom": "8px"}}>
+            <div className="row" style={{"marginBottom": "var(--space-2)"}}>
                 <h2 style={{"margin": "0"}}>Edit task</h2>
                 <span className="spacer"></span>
                 <button className="btn small" onClick={lambda (e: MouseEvent) { onClose(); }}>Close</button>
@@ -104,23 +104,23 @@ def:pub TaskEditor(
                         <div className={"block-box " + block.status}>
                             <div><b>{"Suggested" if block.status == "suggested" else "Planned"}</b> {block.start_label}-{block.end_label}</div>
                             {block.reason and <div className="reason">{block.reason}</div>}
-                            <div className="row" style={{"marginTop": "6px"}}>
+                            <div className="row" style={{"marginTop": "var(--space-2)"}}>
                                 <input type="date" value={b_date} onChange={lambda (e: ChangeEvent) { b_date = e.target.value; }} />
                                 <input type="time" value={b_start} onChange={lambda (e: ChangeEvent) { b_start = e.target.value; }} />
                                 to
                                 <input type="time" value={b_end} onChange={lambda (e: ChangeEvent) { b_end = e.target.value; }} />
                                 <button className="btn small" onClick={lambda (e: MouseEvent) { act("move"); }} disabled={busy}>Change time</button>
                             </div>
-                            <div className="row" style={{"marginTop": "6px"}}>
+                            <div className="row" style={{"marginTop": "var(--space-2)"}}>
                                 {(block.status == "suggested") and <button className="btn small primary" onClick={lambda (e: MouseEvent) { act("accept"); }} disabled={busy}>Accept</button>}
                                 <button className="btn small danger" onClick={lambda (e: MouseEvent) { act("reject"); }} disabled={busy}>
                                     {"Reject" if block.status == "suggested" else "Remove from calendar"}
                                 </button>
-                                <span className="muted" style={{"fontSize": "12px"}}>Tip: you can also drag blocks in the week grid.</span>
+                                <span className="muted" style={{"fontSize": "var(--text-sm)"}}>Tip: you can also drag blocks in the week grid.</span>
                             </div>
                         </div>
                     }}
-                    <div className="form-grid" style={{"marginTop": "12px"}}>
+                    <div className="form-grid" style={{"marginTop": "var(--space-3)"}}>
                         <label className="field wide">Title
                             <input id="edit-title" value={title} onChange={lambda (e: ChangeEvent) { title = e.target.value; }} />
                         </label>
@@ -145,7 +145,7 @@ def:pub TaskEditor(
                             <input value={notes} onChange={lambda (e: ChangeEvent) { notes = e.target.value; }} />
                         </label>
                     </div>
-                    <div className="row" style={{"marginTop": "12px"}}>
+                    <div className="row" style={{"marginTop": "var(--space-3)"}}>
                         <button id="edit-save" className="btn primary" onClick={lambda (e: MouseEvent) { act("save"); }} disabled={busy}>Save</button>
                         {(task.status != "done") and <button className="btn" onClick={lambda (e: MouseEvent) { act("done"); }} disabled={busy}>Mark done</button>}
                         <span className="spacer"></span>

@@ -33,6 +33,7 @@ import from core.seed { seed_demo_data }
 # Pages live in web/pages/ (file-based routing: the file path is the URL).
 # `app` wraps every page; `children` is the page the router picked.
 
+import ".styles.tokens.css";        # design tokens: the one place values live
 import ".styles.global.css";
 
 def:pub app(children: any) -> JsxElement {

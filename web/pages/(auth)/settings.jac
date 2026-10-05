@@ -192,7 +192,7 @@ def:pub SettingsPage() -> JsxPage {
     }
 
     <div>
-        <h1 style={{"fontSize": "20px"}}>Settings</h1>
+        <h1 style={{"fontSize": "var(--text-xl)"}}>Settings</h1>
         {error and <div className="error">{error}</div>}
         {notice and <div className="notice">{notice}</div>}
 
@@ -221,7 +221,7 @@ def:pub SettingsPage() -> JsxPage {
                     <input type="number" min="1" max="1440" value={max_focus} onChange={lambda (e: ChangeEvent) { max_focus = e.target.value; }} />
                 </label>
             </div>
-            <div className="row" style={{"marginTop": "12px"}}>
+            <div className="row" style={{"marginTop": "var(--space-3)"}}>
                 <span className="muted">Days off:</span>
                 {for d in DAYS {
                     <label key={d} className="row">
@@ -230,7 +230,7 @@ def:pub SettingsPage() -> JsxPage {
                     </label>
                 }}
             </div>
-            <div className="row" style={{"marginTop": "12px"}}>
+            <div className="row" style={{"marginTop": "var(--space-3)"}}>
                 <button id="save-prefs" className="btn primary" type="submit">Save preferences</button>
                 <span className="muted">Leave the preferred window empty for no preference.</span>
             </div>
@@ -264,7 +264,7 @@ def:pub SettingsPage() -> JsxPage {
                     <input id="ics-url" value={ics_url} onChange={lambda (e: ChangeEvent) { ics_url = e.target.value; }} />
                 </label>
             </div>
-            <div className="row" style={{"marginTop": "12px"}}>
+            <div className="row" style={{"marginTop": "var(--space-3)"}}>
                 <button className="btn" onClick={import_url} disabled={busy or not ics_url}>Import URL</button>
                 <span className="muted">or upload a file:</span>
                 <input type="file" accept=".ics,text/calendar" onChange={import_file} />
@@ -292,7 +292,7 @@ def:pub SettingsPage() -> JsxPage {
                 }}
             </ul>
             {if len(series) > 0 {
-                <h2 style={{"marginTop": "16px"}}>Recurring events</h2>
+                <h2 style={{"marginTop": "var(--space-4)"}}>Recurring events</h2>
                 <p className="muted">Tick the ones that are classes.</p>
                 <ul className="list">
                     {for s in series {

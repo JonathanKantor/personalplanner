@@ -181,7 +181,7 @@ def:pub WeekPage() -> JsxPage {
                 <button id="clear-suggestions" className="btn" onClick={clear_all} disabled={busy}>Clear suggestions</button>}
             <button id="add-event" className="btn" onClick={lambda (e: MouseEvent) { open_event(None, today_or_monday()); }}>+ Add event</button>
         </div>
-        <div className="legend" style={{"marginBottom": "8px"}}>
+        <div className="legend" style={{"marginBottom": "var(--space-2)"}}>
             <span className="l-class">Class</span><span className="l-event">Event</span>
             <span className="l-plan">Planned</span><span className="l-suggest">Suggested</span>
             {week and <span>Times in {week.timezone}</span>}
@@ -214,7 +214,7 @@ def:pub WeekPage() -> JsxPage {
                 onClose={lambda { open_task = ""; }} onChanged={lambda { load(); }} />}
 
         {if week and week.suggested_count > 0 {
-            <div className="panel" style={{"marginTop": "16px"}}>
+            <div className="panel" style={{"marginTop": "var(--space-4)"}}>
                 <h2>Suggestions</h2>
                 <ul className="list">
                     {for d in week.days {
