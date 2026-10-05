@@ -98,13 +98,17 @@ laptop, then (the setup step needs ~0.5 GB of disk for the Expo install)
 ```bash
 jac setup mobile                    # one-time Expo scaffold into .jac/mobile-rn/
 bash scripts/fix_mobile_native.sh   # one-time jac 0.37.14 workaround (see below)
-jac run --dev mobile                # prints a QR code; scan it with Expo Go
+bash scripts/phone_dev.sh           # prints a QR code; scan it with Expo Go
 ```
 
-Use `--dev`. Plain `jac run mobile` builds and installs a native Android APK,
-which needs the Android SDK and a JDK ("Invalid or corrupt jarfile ...
-gradle-wrapper.jar" means the Android toolchain isn't set up). Expo Go
-doesn't need any of that.
+Use `scripts/phone_dev.sh`, not `jac run --dev mobile` on its own: in jac
+0.37.14 that command starts its API server by building a native Android APK,
+which fails without the Android SDK ("Invalid or corrupt jarfile ...
+gradle-wrapper.jar"). The app still loads (Metro serves it) but has no server,
+so login and signup fail. The script runs the real API (`jac run --port 8000
+--no-client web`, which includes the mobile walkers) on the port the phone is
+told to use, and restores the API address the failed build blanks out. The
+Gradle error still prints once; ignore it.
 
 **Workaround for phones:** in jac 0.37.14 the native runtime that Metro uses
 is missing `useJacState`, which the compiler emits for every component's `has`
@@ -314,6 +318,8 @@ tests/            end-to-end endpoint tests
   rejects browser calls to `def:protect` functions (E5082); only `def:pub`
   functions and walkers get browser stubs there. `jac run` (dev) works. See
   "Known limitations".
+- **`jac run` flags go before the app name**: `jac run --port 8010 web`
+  works; `jac run web --port 8010` silently ignores the port.
 - **`jacLogin(username, password)`**: the bundled client-auth guide says
   `email`, but usernames work (verified); the CLI and web share accounts.
 - **Module names**: don't name a module after a Python standard-library
@@ -326,8 +332,8 @@ tests/            end-to-end endpoint tests
   expose to the browser. Development mode (`jac run`) is unaffected. Fix
   options: switch the web pages to walkers (like the mobile app), or make the
   endpoints `def:pub` with an explicit "must be logged in" check.
-- The phone (Expo Go) path needs `scripts/fix_mobile_native.sh` (jac 0.37.14
-  native runtime bug) and hasn't yet been confirmed on a device.
+- The phone (Expo Go) path needs two jac 0.37.14 workarounds
+  (`scripts/fix_mobile_native.sh` once, then `scripts/phone_dev.sh`).
 - In dev mode, server errors include a Python traceback in the response
   (`details`); the apps only show the message.
 
