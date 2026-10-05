@@ -4,6 +4,7 @@ Uses the same accounts as the CLI (`plan login`): username + password.
 """
 
 import from "@jac/runtime" { jacLogin, jacSignup, SignupResult, useNavigate }
+import from ..components.MorrowFace { MorrowFace }
 
 def:pub LoginPage() -> JsxPage {
     has username: str = "",
@@ -50,7 +51,12 @@ def:pub LoginPage() -> JsxPage {
     }
 
     <div className="auth panel">
-        <h2>{"Create your account" if signing_up else "Log in to Planner"}</h2>
+        <div className="auth-brand">
+            <MorrowFace />
+            <span className="wordmark">morrow</span>
+        </div>
+        <h2 className="auth-title">{"Create your account" if signing_up else "Welcome back"}</h2>
+        <p className="hint auth-sub">{"A little more room to think, starting now." if signing_up else "Log in to see your week."}</p>
         {error and <div className="error">{error}</div>}
         <form onSubmit={submit}>
             <label className="field">Username

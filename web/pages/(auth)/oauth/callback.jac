@@ -41,7 +41,7 @@ def:pub OAuthCallback() -> JsxPage {
         }
     }
 
-    <div className="panel" style={{"maxWidth": "var(--dialog-width)"}}>
+    <div className="panel narrow">
         <h2>Google Calendar</h2>
         {status and <p id="status">{status}</p>}
         {error and <div className="error">{error}</div>}

@@ -11,6 +11,7 @@ import from core.tasks { get_task, create_task, update_task, complete_task, dele
 import from core.planning { accept_block, reject_block, adjust_block }
 import type from core.models { TaskView, DayItem }
 import from ..lib.ui { error_text, hhmm, local_input }
+import from .kit { Dialog }
 
 def:pub TaskEditor(
     taskId: str,
@@ -30,6 +31,7 @@ def:pub TaskEditor(
         minutes: str = "60",
         course: str = "",
         notes: str = "",
+        repeat: str = "",                    # new tasks only, e.g. "WEEKLY:MO,WE"
         b_date: str = "",
         b_start: str = "",
         b_end: str = "",
@@ -68,7 +70,7 @@ def:pub TaskEditor(
         busy = True;
         try {
             if action == "save" and creating {
-                await create_task(title, due, priority, int(minutes or "0"), notes, course, "");
+                await create_task(title, due, priority, int(minutes or "0"), notes, course, repeat);
             } elif action == "save" {
                 await update_task(taskId, {
                     "title": title, "due": due, "priority": priority,
@@ -94,17 +96,7 @@ def:pub TaskEditor(
         }
     }
 
-    def stop(e: MouseEvent) {
-        e.stopPropagation();                         # clicks inside don't close the dialog
-    }
-
-    <div className="modal-backdrop" onClick={lambda (e: MouseEvent) { onClose(); }}>
-        <div className="modal panel" onClick={stop}>
-            <div className="row" style={{"marginBottom": "var(--space-2)"}}>
-                <h2 style={{"margin": "0"}}>{"Add task" if creating else "Edit task"}</h2>
-                <span className="spacer"></span>
-                <button className="btn small" onClick={lambda (e: MouseEvent) { onClose(); }}>Close</button>
-            </div>
+    <Dialog title={"Add task" if creating else "Edit task"} onClose={onClose}>
             {error and <div className="error">{error}</div>}
             {if not ready {
                 <p className="muted">{"" if error else "Loading..."}</p>
@@ -114,23 +106,23 @@ def:pub TaskEditor(
                         <div className={"block-box " + block.status}>
                             <div><b>{"Suggested" if block.status == "suggested" else "Planned"}</b> {block.start_label}-{block.end_label}</div>
                             {block.reason and <div className="reason">{block.reason}</div>}
-                            <div className="row" style={{"marginTop": "var(--space-2)"}}>
-                                <input type="date" value={b_date} onChange={lambda (e: ChangeEvent) { b_date = e.target.value; }} />
-                                <input type="time" value={b_start} onChange={lambda (e: ChangeEvent) { b_start = e.target.value; }} />
+                            <div className="row mt-2">
+                                <input type="date" aria-label="Block date" value={b_date} onChange={lambda (e: ChangeEvent) { b_date = e.target.value; }} />
+                                <input type="time" aria-label="Block start" value={b_start} onChange={lambda (e: ChangeEvent) { b_start = e.target.value; }} />
                                 to
-                                <input type="time" value={b_end} onChange={lambda (e: ChangeEvent) { b_end = e.target.value; }} />
+                                <input type="time" aria-label="Block end" value={b_end} onChange={lambda (e: ChangeEvent) { b_end = e.target.value; }} />
                                 <button className="btn small" onClick={lambda (e: MouseEvent) { act("move"); }} disabled={busy}>Change time</button>
                             </div>
-                            <div className="row" style={{"marginTop": "var(--space-2)"}}>
+                            <div className="row mt-2">
                                 {(block.status == "suggested") and <button className="btn small primary" onClick={lambda (e: MouseEvent) { act("accept"); }} disabled={busy}>Accept</button>}
                                 <button className="btn small danger" onClick={lambda (e: MouseEvent) { act("reject"); }} disabled={busy}>
                                     {"Reject" if block.status == "suggested" else "Remove from calendar"}
                                 </button>
-                                <span className="muted" style={{"fontSize": "var(--text-sm)"}}>Tip: you can also drag blocks in the week grid.</span>
+                                <span className="hint">Tip: you can also drag blocks in the week grid.</span>
                             </div>
                         </div>
                     }}
-                    <div className="form-grid" style={{"marginTop": "var(--space-3)"}}>
+                    <div className="form-grid mt-3">
                         <label className="field wide">Title
                             <input id="edit-title" value={title} onChange={lambda (e: ChangeEvent) { title = e.target.value; }} />
                         </label>
@@ -151,11 +143,17 @@ def:pub TaskEditor(
                         <label className="field">Course / category
                             <input value={course} onChange={lambda (e: ChangeEvent) { course = e.target.value; }} />
                         </label>
+                        {if creating {
+                            <label className="field">Repeat
+                                <input id="edit-repeat" placeholder="e.g. WEEKLY:MO,WE" value={repeat}
+                                    onChange={lambda (e: ChangeEvent) { repeat = e.target.value; }} />
+                            </label>
+                        }}
                         <label className="field wide">Notes
                             <input value={notes} onChange={lambda (e: ChangeEvent) { notes = e.target.value; }} />
                         </label>
                     </div>
-                    <div className="row" style={{"marginTop": "var(--space-3)"}}>
+                    <div className="row mt-4">
                         <button id="edit-save" className="btn primary" onClick={lambda (e: MouseEvent) { act("save"); }} disabled={busy or not title.strip() or not due}>{"Add task" if creating else "Save"}</button>
                         {(task and task.status != "done") and <button className="btn" onClick={lambda (e: MouseEvent) { act("done"); }} disabled={busy}>Mark done</button>}
                         <span className="spacer"></span>
@@ -169,6 +167,5 @@ def:pub TaskEditor(
                     </div>
                 </div>
             }}
-        </div>
-    </div>
+    </Dialog>
 }

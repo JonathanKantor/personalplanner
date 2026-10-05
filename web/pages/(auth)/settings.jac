@@ -10,6 +10,8 @@ import from core.gcal { google_status, google_auth_url, disconnect_google }
 import from core.seed { seed_demo_data }
 import type from core.models { CalendarView, SeriesView, SyncResult }
 import from ...lib.ui { error_text }
+import from ...components.PageHeader { PageHeader }
+import from ...components.kit { Chip }
 
 glob DAYS: list[str] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
@@ -196,8 +198,9 @@ def:pub SettingsPage() -> JsxPage {
         await load();
     }
 
-    <div>
-        <h1 style={{"fontSize": "var(--text-xl)"}}>Settings</h1>
+    <div className="narrow">
+        <PageHeader eyebrow="Settings" title="Make it yours"
+                    subtitle="Your hours, your calendars, and how the planner fits work around them." />
         {error and <div className="error">{error}</div>}
         {notice and <div className="notice">{notice}</div>}
 
@@ -234,7 +237,7 @@ def:pub SettingsPage() -> JsxPage {
                     <input type="number" min="1" max="1440" value={max_focus} onChange={lambda (e: ChangeEvent) { max_focus = e.target.value; }} />
                 </label>
             </div>
-            <div className="row" style={{"marginTop": "var(--space-3)"}}>
+            <div className="row mt-3">
                 <span className="muted">Days off:</span>
                 {for d in DAYS {
                     <label key={d} className="row">
@@ -243,7 +246,7 @@ def:pub SettingsPage() -> JsxPage {
                     </label>
                 }}
             </div>
-            <div className="row" style={{"marginTop": "var(--space-3)"}}>
+            <div className="row mt-4">
                 <button id="save-prefs" className="btn primary" type="submit">Save preferences</button>
                 <span className="muted">Leave the preferred window empty for no preference.</span>
             </div>
@@ -277,10 +280,10 @@ def:pub SettingsPage() -> JsxPage {
                     <input id="ics-url" value={ics_url} onChange={lambda (e: ChangeEvent) { ics_url = e.target.value; }} />
                 </label>
             </div>
-            <div className="row" style={{"marginTop": "var(--space-3)"}}>
+            <div className="row mt-3">
                 <button className="btn" onClick={import_url} disabled={busy or not ics_url}>Import URL</button>
                 <span className="muted">or upload a file:</span>
-                <input type="file" accept=".ics,text/calendar" onChange={import_file} />
+                <input type="file" aria-label="Upload an .ics file" accept=".ics,text/calendar" onChange={import_file} />
                 {if not google_connected {
                     <button className="btn" onClick={sync_now} disabled={busy}>Re-sync URLs</button>
                 }}
@@ -295,7 +298,7 @@ def:pub SettingsPage() -> JsxPage {
             <ul className="list">
                 {for c in calendars {
                     <li key={c.id}>
-                        <div className="grow"><b>{c.name}</b> <span className="tag">{c.source}</span>
+                        <div className="grow"><b>{c.name}</b> <Chip label={c.source} />
                             <div className="reason">{c.event_count} events{(" · synced " + new(Date, c.last_synced).toLocaleString()) if c.last_synced else ""}</div>
                         </div>
                         <label className="row"><input type="checkbox" checked={c.is_class}
@@ -305,7 +308,7 @@ def:pub SettingsPage() -> JsxPage {
                 }}
             </ul>
             {if len(series) > 0 {
-                <h2 style={{"marginTop": "var(--space-4)"}}>Recurring events</h2>
+                <h2 className="mt-4">Recurring events</h2>
                 <p className="muted">Tick the ones that are classes.</p>
                 <ul className="list">
                     {for s in series {

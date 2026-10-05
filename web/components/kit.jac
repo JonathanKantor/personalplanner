@@ -1,9 +1,10 @@
-"""Small reusable UI pieces: Icon, Button, IconButton, Card, Chip, Avatar.
+"""Small reusable UI pieces: Icon, Button, IconButton, Card, Chip, Avatar, Dialog.
 
 Styling lives in web/styles/components.css (all values from tokens.css);
 these components only pick class names, so a look is defined once.
 """
 
+import from "react" { useEffect }
 import from "lucide-react" {
     Sparkles, CalendarDays, ListChecks, MessageCircle, MoreHorizontal, Sun,
     ChevronDown, ChevronLeft, ChevronRight, Plus, Check, X, LayoutGrid, List,
@@ -29,7 +30,7 @@ def:pub Icon(name: str, size: int = 16) -> JsxElement {
 """Default click handler for buttons that don't need one (e.g. type=submit)."""
 def _noop(e: MouseEvent) {}
 
-"""variant: "primary" (filled terracotta) | "outline" | "ghost"."""
+"""variant: "primary" (filled terracotta) | "outline" | "ghost" | "danger"."""
 def:pub Button(
     label: str,
     onClick: Callable[[MouseEvent], None] = _noop,
@@ -81,6 +82,33 @@ def:pub Chip(label: str, tone: str = "neutral") -> JsxElement {
     <span className={"ui-chip " + tone}>{label}</span>
 }
 
+"""Round "done" checkbox (a button: label says what clicking does)."""
+def:pub CheckCircle(checked: bool, label: str, onToggle: Callable[[], None]) -> JsxElement {
+    <button type="button" className={"check-circle" + (" on" if checked else "")}
+        aria-label={label} aria-pressed={checked}
+        onClick={lambda (e: MouseEvent) { e.stopPropagation(); onToggle(); }}>
+        {checked and <Icon name="check" size={10} />}
+    </button>
+}
+
+"""A segmented switch (Week | Agenda, Open | All). Each option is a
+(value, label, icon) Choice; the current one is pressed."""
+obj:pub Choice {
+    has value: str, label: str, icon: str = "";
+}
+
+def:pub Segmented(options: list[Choice], value: str, onChange: Callable[[str], None], label: str) -> JsxElement {
+    <div className="segmented" role="group" aria-label={label}>
+        {for o in options {
+            <button type="button" key={o.value} aria-pressed={o.value == value}
+                className={"seg" + (" on" if o.value == value else "")}
+                onClick={lambda (e: MouseEvent) { onChange(o.value); }}>
+                {(<Icon name={o.icon} size={14} />) if o.icon else None} {o.label}
+            </button>
+        }}
+    </div>
+}
+
 """Initials from a name: "Maya Chen" -> "MC", "maya" -> "MA"."""
 def:pub initials_of(name: str) -> str {
     parts = [p for p in name.strip().split(" ") if p];
@@ -92,4 +120,32 @@ def:pub initials_of(name: str) -> str {
 
 def:pub Avatar(name: str, size: str = "md") -> JsxElement {
     <span className={"ui-avatar " + size} aria-hidden="true">{initials_of(name)}</span>
+}
+
+"""A modal dialog: dimmed backdrop, a card with a title and a close (✕)
+button. Clicking the backdrop or pressing Esc calls `onClose`; clicks inside
+the card don't."""
+def:pub Dialog(title: str, onClose: Callable[[], None], children: any = None, subtitle: str = "") -> JsxElement {
+    useEffect(lambda {
+        def on_key(e: any) {
+            if e.key == "Escape" { onClose(); }
+        }
+        window.addEventListener("keydown", on_key);
+        return lambda { window.removeEventListener("keydown", on_key); };
+    }, [onClose]);
+
+    def stop(e: MouseEvent) {
+        e.stopPropagation();
+    }
+
+    <div className="modal-backdrop" onClick={lambda (e: MouseEvent) { onClose(); }}>
+        <section className="modal ui-card" role="dialog" aria-modal="true" aria-label={title} onClick={stop}>
+            <header className="dialog-head">
+                <h2 className="dialog-title">{title}</h2>
+                <IconButton icon="x" label="Close" onClick={lambda (e: MouseEvent) { onClose(); }} />
+            </header>
+            {(<p className="dialog-subtitle">{subtitle}</p>) if subtitle else None}
+            {children}
+        </section>
+    </div>
 }

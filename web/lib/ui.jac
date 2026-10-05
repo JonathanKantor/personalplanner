@@ -100,3 +100,17 @@ def:pub now_minutes(tz: str) -> int {
     parts: any = d.toLocaleTimeString("en-GB", {"timeZone": tz, "hour": "2-digit", "minute": "2-digit", "hour12": False}).split(":");
     return int(parts[0]) * 60 + int(parts[1]);
 }
+
+"""True when a key press is typing into a field, so single-key shortcuts
+(T, N, J, K...) must not fire."""
+def:pub typing_in_field(e: any) -> bool {
+    el: any = e.target;
+    tag = str(el.tagName or "");
+    return tag == "INPUT" or tag == "TEXTAREA" or tag == "SELECT" or el.isContentEditable == True;
+}
+
+"""The shortcut-modifier label for this computer: "⌘" on a Mac, else "Ctrl"."""
+def:pub mod_key -> str {
+    plat: any = navigator.platform;  # jac:ignore[E1032]
+    return "⌘" if "Mac" in str(plat) else "Ctrl";
+}

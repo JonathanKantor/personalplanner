@@ -9,6 +9,8 @@ import from core.canvas { canvas_sync, canvas_import, canvas_feed_url }
 import from core.preferences { get_preferences }
 import type from core.models { CanvasPreview, CanvasItem }
 import from ...lib.ui { error_text }
+import from ...components.PageHeader { PageHeader }
+import from ...components.kit { Chip }
 
 glob QUICK_MINUTES: list[int] = [30, 60, 120, 180];
 
@@ -128,13 +130,14 @@ def:pub CanvasPage() -> JsxPage {
 
     def status_tag(status: str) -> JsxElement {
         label = {"imported": "imported", "dismissed": "skipped before", "past_due": "past due"}.get(status, "");
-        return <span className={"tag" + (" done" if status == "imported" else "")}>{label}</span> if label else <span></span>;
+        return <Chip label={label} tone={"accent" if status == "imported" else "neutral"} /> if label else <span></span>;
     }
 
     chosen = len([r for r in rows if r.picked and r.status != "imported"]);
 
     <div>
-        <h1 style={{"fontSize": "var(--text-xl)"}}>Import from Canvas</h1>
+        <PageHeader eyebrow="Import" title="Canvas assignments"
+                    subtitle="Bring assignments in as tasks, with your own time estimates." />
         {error and <div className="error">{error}</div>}
         {notice and <div className="notice">{notice}</div>}
 
@@ -142,7 +145,7 @@ def:pub CanvasPage() -> JsxPage {
             <h2>Canvas calendar feed</h2>
             <p className="muted">In Canvas, open Calendar and click "Calendar Feed" (bottom right). Copy the link and paste it here. It's private to you, so treat it like a password.</p>
             <div className="row">
-                <input id="feed-url" style={{"flex": "1", "padding": "var(--space-2) var(--space-3)", "border": "1px solid var(--color-border-strong)", "borderRadius": "var(--radius-control)"}}
+                <input id="feed-url" className="input grow" aria-label="Canvas calendar feed URL"
                     placeholder="https://umich.instructure.com/feeds/calendars/user_....ics"
                     value={url} onChange={lambda (e: ChangeEvent) { url = e.target.value; }} />
                 <button id="load" className="btn primary" onClick={load} disabled={busy or not url}>{"Sync" if loaded else "Load assignments"}</button>
@@ -151,11 +154,11 @@ def:pub CanvasPage() -> JsxPage {
 
         {if loaded {
             <div className="panel">
-                <div className="row" style={{"marginBottom": "var(--space-2)"}}>
-                    <h2 style={{"margin": "0"}}>Assignments</h2>
+                <div className="row mb-2">
+                    <h2 className="m-0">Assignments</h2>
                     <span className="spacer"></span>
                     <span className="muted">Estimate for all ticked:</span>
-                    <input type="number" min="5" max="1440" step="5" value={bulk} style={{"width": "var(--field-xs)"}}
+                    <input type="number" min="5" max="1440" step="5" value={bulk} className="input xs" aria-label="Estimate for all ticked (minutes)"
                         onChange={lambda (e: ChangeEvent) { bulk = e.target.value; }} />
                     <button className="btn small" onClick={apply_bulk}>Apply</button>
                 </div>
@@ -164,31 +167,31 @@ def:pub CanvasPage() -> JsxPage {
                 }}
                 <ul className="list">
                     {for r in rows {
-                        <li key={r.uid} style={{"opacity": "0.55" if r.status == "imported" else "1"}}>
-                            <input type="checkbox" checked={r.picked} disabled={r.status == "imported"}
+                        <li key={r.uid} className={"imported" if r.status == "imported" else ""}>
+                            <input type="checkbox" aria-label={"Import " + r.title} checked={r.picked} disabled={r.status == "imported"}
                                 onChange={lambda (e: ChangeEvent) { edit(r.uid, "picked", e.target.checked); }} />
                             <div className="grow">
                                 <div className="row">
-                                    <input value={r.title} style={{"flex": "1", "fontWeight": "600", "border": "none", "background": "transparent"}}
+                                    <input value={r.title} className="input bare grow strong" aria-label="Title"
                                         disabled={r.status == "imported"}
                                         onChange={lambda (e: ChangeEvent) { edit(r.uid, "title", e.target.value); }} />
                                     {status_tag(r.status)}
                                 </div>
                                 <div className="row reason">
                                     <span>due {due_label(r.due)}</span>
-                                    <input value={r.course} placeholder="course" style={{"width": "var(--field-sm)"}}
+                                    <input value={r.course} placeholder="course" className="input sm" aria-label="Course"
                                         disabled={r.status == "imported"}
                                         onChange={lambda (e: ChangeEvent) { edit(r.uid, "course", e.target.value); }} />
                                 </div>
                             </div>
                             {if r.status != "imported" {
-                                <select value={r.priority} onChange={lambda (e: ChangeEvent) { edit(r.uid, "priority", e.target.value); }}>
+                                <select className="input" aria-label="Priority" value={r.priority} onChange={lambda (e: ChangeEvent) { edit(r.uid, "priority", e.target.value); }}>
                                     <option value="high">High</option>
                                     <option value="medium">Medium</option>
                                     <option value="low">Low</option>
                                 </select>
-                                <div className="row" style={{"gap": "var(--space-1)"}}>
-                                    <input className="est" type="number" min="5" max="1440" step="5" value={r.minutes} style={{"width": "var(--field-xs)"}}
+                                <div className="row gap-1">
+                                    <input className="est input xs" aria-label="Estimate (minutes)" type="number" min="5" max="1440" step="5" value={r.minutes}
                                         onChange={lambda (e: ChangeEvent) { edit(r.uid, "minutes", e.target.value); }} />
                                     <span className="muted">min</span>
                                     {for m in QUICK_MINUTES {
@@ -200,7 +203,7 @@ def:pub CanvasPage() -> JsxPage {
                         </li>
                     }}
                 </ul>
-                <div className="row" style={{"marginTop": "var(--space-3)"}}>
+                <div className="row mt-3">
                     <button id="import" className="btn primary" onClick={do_import} disabled={busy or chosen == 0}>Import {str(chosen)} task(s)</button>
                     <span className="muted">Unticked assignments are remembered as skipped. Due dates always come from Canvas.</span>
                 </div>

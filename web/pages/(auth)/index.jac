@@ -6,6 +6,7 @@ Pages in the (auth) folder require login; the router redirects to /login.
 """
 
 import from "react" { useEffect }
+import from "@jac/runtime" { Link }
 import from core.views { get_week_view, get_coming_up }
 import from core.planning { suggest_schedule, accept_block, reject_block, accept_all, adjust_block }
 import type from core.models { WeekView, PlanView, DayItem, ComingUpView }
@@ -16,10 +17,10 @@ import from core.tasks { complete_task, update_task }
 import from ...components.TaskEditor { TaskEditor }
 import from ...components.EventEditor { EventEditor }
 import from ...components.PageHeader { PageHeader }
-import from ...components.kit { Button, Card, Icon, IconButton }
+import from ...components.kit { Button, Card, IconButton, Segmented, Choice }
 import from core.events { update_event }
 import from core.planning { clear_suggestions }
-import from ...lib.ui { error_text, hhmm, tz_name }
+import from ...lib.ui { error_text, hhmm, tz_name, typing_in_field, mod_key }
 
 def:pub WeekPage() -> JsxPage {
     has week: WeekView | None = None,
@@ -53,6 +54,45 @@ def:pub WeekPage() -> JsxPage {
     async can with [start] entry {
         await load();
     }
+
+    """Planner actions by name: used by the keyboard shortcuts below and by
+    the command palette (which sends a `morrow:command` browser event)."""
+    def run_command(name: str) {
+        if name == "today" { start = ""; }
+        elif name == "prev" and week { start = week.prev_start; }
+        elif name == "next" and week { start = week.next_start; }
+        elif name == "new-event" { open_event(None, today_or_monday()); }
+        elif name == "new-task" { adding_task = True; }
+        elif name == "suggest" { suggest(); }
+        elif name == "view-week" { view = "week"; }
+        elif name == "view-agenda" { view = "agenda"; }
+    }
+
+    # Single-key shortcuts: T this week, ←/K previous, →/J next, N new event,
+    # A new task. Ignored while typing, with Cmd/Ctrl/Alt held, or with a
+    # dialog open.
+    dialog_open = open_task != "" or event_open or adding_task;
+    useEffect(lambda {
+        keys = {"t": "today", "arrowleft": "prev", "k": "prev", "arrowright": "next", "j": "next",
+                "n": "new-event", "a": "new-task"};
+        def on_key(e: any) {
+            if dialog_open or e.metaKey or e.ctrlKey or e.altKey or typing_in_field(e) {
+                return;
+            }
+            name = keys.get(str(e.key).lower(), "");
+            if name {
+                e.preventDefault();
+                run_command(name);
+            }
+        }
+        def on_command(e: any) { run_command(str(e.detail)); }
+        window.addEventListener("keydown", on_key);
+        window.addEventListener("morrow:command", on_command);
+        return lambda {
+            window.removeEventListener("keydown", on_key);
+            window.removeEventListener("morrow:command", on_command);
+        };
+    }, [week, dialog_open, view]);
 
     # The floating assistant sends `morrow:changed` after it edits the plan.
     useEffect(lambda {
@@ -200,6 +240,7 @@ def:pub WeekPage() -> JsxPage {
     }
 
     tz = week.timezone if week else "America/Detroit";
+    empty_week = week and len([it for d in week.days for it in d.items]) == 0;
     year = week.start[0:4] if week else "";
     range_label = week.label.replace(" - ", " – ") if week else "";
 
@@ -228,20 +269,21 @@ def:pub WeekPage() -> JsxPage {
                     {(week and week.suggested_count > 0) and
                         <Button id="clear-suggestions" label="Clear" variant="ghost" small={True} onClick={lambda (e: MouseEvent) { clear_all(); }} disabled={busy} />}
                     <Button id="suggest" label="Suggest schedule" icon="sparkles" small={True} onClick={lambda (e: MouseEvent) { suggest(); }} disabled={busy} />
-                    <div className="segmented" role="tablist" aria-label="Calendar view">
-                        <button type="button" role="tab" aria-selected={view == "week"} className={"seg" + (" on" if view == "week" else "")}
-                            onClick={lambda (e: MouseEvent) { view = "week"; }}><Icon name="grid" size={14} /> Week</button>
-                        <button type="button" role="tab" aria-selected={view == "agenda"} className={"seg" + (" on" if view == "agenda" else "")}
-                            onClick={lambda (e: MouseEvent) { view = "agenda"; }}><Icon name="list" size={14} /> Agenda</button>
-                    </div>
+                    <Segmented label="Calendar view" value={view} onChange={lambda (v: str) { view = v; }}
+                        options={[Choice(value="week", label="Week", icon="grid"), Choice(value="agenda", label="Agenda", icon="list")]} />
                 </div>
 
+                {empty_week and
+                    <div className="cal-empty" role="status">
+                        <b>Nothing on this week yet.</b>
+                        <span className="hint"> Connect a calendar in <Link to="/settings">Settings</Link>, add a task, or ask Morrow to plan something.</span>
+                    </div>}
                 {if not week {
                     <div className="cal-skeleton" aria-label="Loading"></div>
                 } elif view == "week" {
-                    <WeekGrid week={week} tz={tz} onAccept={accept} onReject={reject} onToggleDone={toggle_done}
+                    <div className="cal-scroll"><WeekGrid week={week} tz={tz} onAccept={accept} onReject={reject} onToggleDone={toggle_done}
                         onOpen={open_editor} onOpenEvent={lambda (it: DayItem, day: str) { open_event(it, day); }}
-                        onMove={move_item} />
+                        onMove={move_item} /></div>
                 } else {
                     <AgendaList week={week} onAccept={accept} onReject={reject} onToggleDone={toggle_done}
                         onOpen={open_editor} onOpenEvent={lambda (it: DayItem, day: str) { open_event(it, day); }} />
@@ -252,6 +294,10 @@ def:pub WeekPage() -> JsxPage {
                     <span className="sw deadline">Deadline</span>
                     <span className="sw focus">Focus time</span>
                     <span className="spacer"></span>
+                    <span className="legend-keys" aria-hidden="true">
+                        <kbd className="kbd">T</kbd> today <kbd className="kbd">←</kbd><kbd className="kbd">→</kbd> week
+                        <kbd className="kbd">N</kbd> event <kbd className="kbd">{mod_key()} K</kbd> commands
+                    </span>
                     <span>Times in {tz_name(tz)}</span>
                 </div>
             </Card>

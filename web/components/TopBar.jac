@@ -2,10 +2,11 @@
 
 import from "@jac/runtime" { Link, useNavigate, jacLogout }
 import from .kit { Icon, Avatar, NavItem }
+import from ..lib.ui { mod_key }
 
 glob PILLS: list[NavItem] = [NavItem(to="/", icon="calendar", label="Planner"), NavItem(to="/tasks", icon="tasks", label="Tasks")];
 
-def:pub TopBar(path: str, name: str, today: str, city: str) -> JsxElement {
+def:pub TopBar(path: str, name: str, today: str, city: str, onPalette: Callable[[], None]) -> JsxElement {
     has menu_open: bool = False;
     nav = useNavigate();
 
@@ -28,6 +29,10 @@ def:pub TopBar(path: str, name: str, today: str, city: str) -> JsxElement {
             }}
         </nav>
         <span className="spacer"></span>
+        <button type="button" className="palette-btn" onClick={lambda (e: MouseEvent) { onPalette(); }}
+            aria-label="Open command palette" title="Commands">
+            <span>Jump to…</span><kbd className="kbd">{mod_key()} K</kbd>
+        </button>
         <span className="topbar-date num"><Icon name="sun" />{today}{(" · " + city) if city else ""}</span>
         <div className="account">
             <button type="button" className="account-btn" aria-haspopup="menu" aria-expanded={menu_open}

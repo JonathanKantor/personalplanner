@@ -171,7 +171,7 @@ def:pub WeekGrid(
 
     day_lanes = {d.date: lanes(d.items) for d in week.days};
 
-    <div className="cal-grid" role="grid" aria-label="Week calendar">
+    <div className="cal-grid" role="region" aria-label="Week calendar">
         {#* header row: weekday + date number *#}
         <div className="cal-corner"></div>
         {for d in week.days {

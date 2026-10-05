@@ -7,7 +7,7 @@ Data comes from the server (get_coming_up); this component only draws it.
 
 import from "@jac/runtime" { Link }
 import type from core.models { ComingUpView, UpcomingItem }
-import from .kit { Card, Icon, Chip }
+import from .kit { Card, Icon, Chip, CheckCircle }
 
 def:pub ComingUp(
     data: ComingUpView | None,
@@ -29,19 +29,19 @@ def:pub ComingUp(
 
         {if not data {
             <div className="cu-skeleton" aria-label="Loading">
-                {for i in [1, 2, 3] { <div key={str(i)} className="cu-skeleton-row"></div> }}
+                {for i in [1, 2, 3] { <div key={str(i)} className="skeleton-row"></div> }}
             </div>
         } elif len(data.items) == 0 {
             <p className="cu-empty">Nothing coming up. Enjoy the room to think.</p>
         } else {
-            <ul className="cu-list">
+            <ul className="item-list">
                 {for it in data.items {
-                    <li key={it.id} className="cu-row">
-                        <button type="button" className="cu-check" aria-label={"Mark done: " + it.title}
-                            onClick={lambda (e: MouseEvent) { onToggleDone(it.id); }}></button>
-                        <button type="button" className="cu-main" onClick={lambda (e: MouseEvent) { onOpen(it.id); }}>
-                            <span className="cu-title">{it.title}</span>
-                            <span className={"cu-sub" + (" overdue" if it.overdue else "")}>{subtitle(it)}</span>
+                    <li key={it.id} className="item-row">
+                        <CheckCircle checked={False} label={"Mark done: " + it.title}
+                            onToggle={lambda { onToggleDone(it.id); }} />
+                        <button type="button" className="item-main" onClick={lambda (e: MouseEvent) { onOpen(it.id); }}>
+                            <span className="item-title">{it.title}</span>
+                            <span className={"item-sub" + (" overdue" if it.overdue else "")}>{subtitle(it)}</span>
                         </button>
                         <Chip label={it.date_chip} tone={"danger" if it.overdue else "accent"} />
                     </li>

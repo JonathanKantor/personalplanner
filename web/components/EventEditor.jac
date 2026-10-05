@@ -7,6 +7,7 @@ class); with an item it edits or deletes that occurrence (or its whole series).
 import from core.events { create_event, update_event, delete_event }
 import type from core.models { DayItem }
 import from ..lib.ui { error_text, hhmm }
+import from .kit { Dialog }
 
 def:pub EventEditor(
     day: str,
@@ -66,18 +67,8 @@ def:pub EventEditor(
         }
     }
 
-    def stop(e: MouseEvent) {
-        e.stopPropagation();
-    }
-
-    <div className="modal-backdrop" onClick={lambda (e: MouseEvent) { onClose(); }}>
-        <div className="modal panel" onClick={stop}>
-            <div className="row" style={{"marginBottom": "var(--space-2)"}}>
-                <h2 style={{"margin": "0"}}>{"Edit event" if item else "Add event"}</h2>
-                <span className="spacer"></span>
-                <button className="btn small" onClick={lambda (e: MouseEvent) { onClose(); }}>Close</button>
-            </div>
-            <p className="muted" style={{"marginTop": "0"}}>Meetings and other commitments that aren't in Google Calendar. The planner schedules around them.</p>
+    <Dialog title={"Edit event" if item else "Add event"} onClose={onClose}
+            subtitle="Meetings and other commitments that aren't in Google Calendar. The planner schedules around them.">
             {error and <div className="error">{error}</div>}
             <div className="form-grid">
                 <label className="field wide">Title
@@ -95,12 +86,12 @@ def:pub EventEditor(
                 </label>
             </div>
             {if not item {
-                <div className="row" style={{"marginTop": "var(--space-3)"}}>
+                <div className="row mt-3">
                     <label className="row">
                         <input id="event-weekly" type="checkbox" checked={weekly} onChange={lambda (e: ChangeEvent) { weekly = e.target.checked; }} />
                         Repeat weekly for
                     </label>
-                    <input type="number" min="2" max="30" value={weeks} style={{"width": "var(--field-xs)"}} disabled={not weekly}
+                    <input type="number" min="2" max="30" value={weeks} className="input xs" aria-label="Number of weeks" disabled={not weekly}
                         onChange={lambda (e: ChangeEvent) { weeks = e.target.value; }} />
                     <span className="muted">weeks</span>
                     <span className="spacer"></span>
@@ -110,12 +101,11 @@ def:pub EventEditor(
                     </label>
                 </div>
             }}
-            <div className="row" style={{"marginTop": "var(--space-3)"}}>
+            <div className="row mt-4">
                 <button id="event-save" className="btn primary" onClick={save} disabled={busy or not title.strip()}>{"Save" if item else "Add event"}</button>
                 <span className="spacer"></span>
                 {item and <button className="btn danger" onClick={lambda (e: MouseEvent) { remove(False); }}>Delete</button>}
                 {item and <button className="btn danger" onClick={lambda (e: MouseEvent) { remove(True); }} title="Every week of a repeating event">Delete all repeats</button>}
             </div>
-        </div>
-    </div>
+    </Dialog>
 }

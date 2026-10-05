@@ -30,6 +30,13 @@ def:pub AskMorrow() -> JsxElement {
         return lambda { window.removeEventListener("keydown", on_key); };
     }, [open]);
 
+    # The command palette's "Ask Morrow" opens the panel.
+    useEffect(lambda {
+        def on_ask(e: any) { open = True; }
+        window.addEventListener("morrow:ask", on_ask);
+        return lambda { window.removeEventListener("morrow:ask", on_ask); };
+    }, []);
+
     def toggle(e: MouseEvent) {
         open = not open;
     }

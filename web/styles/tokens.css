@@ -102,6 +102,8 @@
   --swatch: 10px;                            /* legend squares */
   --block-actions: 48px;                     /* room for the ✓ ✗ on suggested blocks */
   --chat-min-height: 320px;
+  --palette-width: 560px;
+  --grid-min-width: 720px;                   /* below this the week grid scrolls */                   /* Cmd/Ctrl+K */
   --ask-panel-width: 380px;                  /* docked assistant */
   --ask-panel-height: 520px;
   --face-md: 48px;                           /* Morrow avatar */
