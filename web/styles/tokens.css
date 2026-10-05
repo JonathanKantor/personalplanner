@@ -102,6 +102,12 @@
   --swatch: 10px;                            /* legend squares */
   --block-actions: 48px;                     /* room for the ✓ ✗ on suggested blocks */
   --chat-min-height: 320px;
+  --ask-panel-width: 380px;                  /* docked assistant */
+  --ask-panel-height: 520px;
+  --face-md: 48px;                           /* Morrow avatar */
+  --face-sm: 28px;
+  --color-ink: #1F1A17;                      /* Morrow's face (= --color-text) */
+  --z-floating: 38;                          /* above page + rail, below dialogs */
   --menu-min-width: 200px;
 }
 

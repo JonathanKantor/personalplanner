@@ -9,6 +9,7 @@ import from "@jac/runtime" { Outlet, useLocation, jacIsLoggedIn }
 import from core.preferences { get_preferences }
 import from ..components.Rail { Rail }
 import from ..components.TopBar { TopBar }
+import from ..components.AskMorrow { AskMorrow }
 import from ..lib.ui { current_username, today_label }
 
 def:pub Shell() -> JsxLayout {
@@ -44,5 +45,6 @@ def:pub Shell() -> JsxLayout {
             <TopBar path={path} name={name or "You"} today={today_label(tz)} city={city} />
             <main className="page"><Outlet /></main>
         </div>
+        {(path != "/assistant") and <AskMorrow />}
     </div>;
 }

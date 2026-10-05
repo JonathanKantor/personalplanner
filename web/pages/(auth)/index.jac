@@ -5,6 +5,7 @@ to edit it (TaskEditor); drag a block to move it.
 Pages in the (auth) folder require login; the router redirects to /login.
 """
 
+import from "react" { useEffect }
 import from core.views { get_week_view, get_coming_up }
 import from core.planning { suggest_schedule, accept_block, reject_block, accept_all, adjust_block }
 import type from core.models { WeekView, PlanView, DayItem, ComingUpView }
@@ -52,6 +53,13 @@ def:pub WeekPage() -> JsxPage {
     async can with [start] entry {
         await load();
     }
+
+    # The floating assistant sends `morrow:changed` after it edits the plan.
+    useEffect(lambda {
+        def reload(e: any) { load(); }
+        window.addEventListener("morrow:changed", reload);
+        return lambda { window.removeEventListener("morrow:changed", reload); };
+    }, [start]);
 
     # Each action: clear the old error, call the server, show any error,
     # then reload the week so the grid reflects the change.

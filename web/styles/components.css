@@ -178,3 +178,67 @@
   background-size: 200% 100%; animation: shimmer 1.4s var(--ease-out) infinite;
 }
 @media (prefers-reduced-motion: reduce) { .cu-skeleton-row { animation: none; } }
+
+/* ---------------------------------------------------------------- assistant chat (page + docked) */
+.chat { display: flex; flex-direction: column; gap: var(--space-3); }
+.chat-meta { display: flex; align-items: center; gap: var(--space-2); }
+.chat-model { font-size: var(--text-xs); color: var(--color-text-subtle); }
+.chat-log {
+  min-height: var(--chat-min-height); overflow-y: auto; padding: var(--space-4);
+  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card);
+}
+.chat-intro { margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--color-text-muted); }
+.chat-examples { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chat-example {
+  padding: var(--space-1) var(--space-3); border: 1px solid var(--color-border-strong); border-radius: var(--radius-pill);
+  background: var(--color-surface); color: var(--color-text); font-size: var(--text-xs); cursor: pointer; text-align: left;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+.chat-example:hover { background: var(--color-accent-tint); }
+.chat-form { display: flex; gap: var(--space-2); }
+.chat-input {
+  flex: 1; min-width: 0; padding: var(--space-2) var(--space-3); font: inherit;
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-control); background: var(--color-surface);
+}
+.chat.docked { flex: 1; min-height: 0; padding: 0 var(--space-4) var(--space-4); }
+.chat.docked .chat-log { flex: 1; min-height: 0; border: none; padding: 0; }
+
+/* ---------------------------------------------------------------- floating "Ask Morrow" */
+.ask-morrow {
+  position: fixed; right: var(--space-6); bottom: var(--space-6); z-index: var(--z-floating);
+  display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-3);
+}
+.ask-launcher { display: flex; align-items: center; gap: var(--space-3); }
+.ask-pill {
+  padding: var(--space-2) var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-pill);
+  background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-sm);
+  font-weight: var(--weight-medium); box-shadow: var(--shadow-lift); cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.ask-avatar {
+  padding: 0; border: none; border-radius: var(--radius-pill); background: transparent; cursor: pointer;
+  box-shadow: 0 0 0 4px var(--color-surface), var(--shadow-lift);           /* soft white ring */
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.ask-pill:hover, .ask-avatar:hover { transform: translateY(-1px); }
+.ask-panel {
+  display: flex; flex-direction: column; width: min(var(--ask-panel-width), calc(100vw - 2 * var(--space-6)));
+  height: min(var(--ask-panel-height), 70vh); background: var(--color-surface);
+  border: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-pop);
+  animation: ask-in var(--duration) var(--ease-out);
+}
+.ask-panel-head { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-3) var(--space-2) var(--space-4); }
+.ask-panel-title { font-weight: var(--weight-semibold); }
+@keyframes ask-in { from { opacity: 0; transform: translateY(var(--space-2)); } to { opacity: 1; transform: none; } }
+
+.morrow-face {
+  display: inline-flex; align-items: center; justify-content: center; gap: 22%;
+  border-radius: var(--radius-pill); background: var(--color-ink);
+}
+.morrow-face.md { width: var(--face-md); height: var(--face-md); }
+.morrow-face.sm { width: var(--face-sm); height: var(--face-sm); }
+.morrow-eye {
+  width: 15%; height: 21%; border-radius: var(--radius-pill); background: var(--color-surface);
+  transition: transform 80ms linear;                                         /* smooths the follow */
+}
+@media (prefers-reduced-motion: reduce) { .ask-panel { animation: none; } .morrow-eye { transition: none; } }
