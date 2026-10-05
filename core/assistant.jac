@@ -14,15 +14,18 @@ Jac/byLLM concepts used here:
 - `conversation=`: a list of earlier messages; byLLM reads it and appends the
   new turn to it, which gives the assistant memory between messages.
 
-Model: DEFAULT_MODEL below (Gemini's free tier); set BYLLM_DEFAULT_MODEL in
-.env to use another. Key: GEMINI_API_KEY (or GOOGLE_API_KEY) in .env.
+Model: a fallback pool of Gemini free-tier models (DEFAULT_MODELS below): if
+one is overloaded or unavailable, the next is tried. Override with
+BYLLM_DEFAULT_MODEL in .env (one name, or several separated by commas).
+Key: GEMINI_API_KEY (or GOOGLE_API_KEY) in .env.
 """
 
 import os;
 import json;
 import contextvars;
+import logging;
 import from datetime { datetime, timedelta }
-import from jaclang.byllm.lib { Model }
+import from jaclang.byllm.lib { Model, ModelPool }
 import from core.models { ChatThread, ChatMessage, ChatReply, AssistantStatus }
 import from core.timeutil { now_utc, to_iso, zone, local_label }
 import from core.preferences { _prefs, get_preferences, update_preferences }
@@ -30,13 +33,23 @@ import from core.tasks { create_task, list_tasks, update_task, complete_task }
 import from core.planning { suggest_schedule, accept_block, reject_block, accept_all, adjust_block }
 import from core.views { get_day_view }
 
-glob DEFAULT_MODEL: str = "gemini/gemini-2.5-flash",
+# Checked against the Gemini API on 2026-10-05 (gemini-2.5-flash is retired
+# for new keys; the newest models often return 503 "high demand").
+glob DEFAULT_MODELS: list[str] = [
+    "gemini/gemini-3.6-flash", "gemini/gemini-3.5-flash-lite", "gemini/gemini-3.1-flash-lite"
+],
      MAX_HISTORY: int = 60,                  # model-facing messages kept per user
      MAX_TRANSCRIPT: int = 200;              # chat-window messages kept per user
 
-# The model used by `by llm(...)` below. Tests replace it with a MockLLM.
-# BYLLM_DEFAULT_MODEL (env) overrides the default.
-glob llm: any = Model(model_name=os.environ.get("BYLLM_DEFAULT_MODEL") or DEFAULT_MODEL);
+def _model_names -> list[str] {
+    configured = os.environ.get("BYLLM_DEFAULT_MODEL", "");
+    names = [n.strip() for n in configured.split(",") if n.strip()];
+    return names or DEFAULT_MODELS;
+}
+
+# The model behind `by llm(...)` below: a ModelPool tries each model in order
+# and moves on when one fails (e.g. "high demand"). Tests replace it with a MockLLM.
+glob llm: any = ModelPool(models=[Model(model_name=n) for n in _model_names()], strategy="fallback", num_retries=1);
 
 # Per-request state. A ContextVar is like a global, but each request (thread)
 # sees its own value, so two users chatting at once don't mix histories.
@@ -248,7 +261,8 @@ glob SYSTEM: str = (
     + "To find time for work, call tool_plan (the planner's own scheduler) and present its suggestions with the reasons; "
     + "do not invent your own time slots. Suggestions are not final: accept them (tool_accept) only when the user agrees, "
     + "unless they clearly asked you to schedule it for them. Ask for an estimate if a new task has none. "
-    + "Use the user's local time, 12-hour clock, and be brief: short sentences or a few bullet points."
+    + "Use the user's local time, 12-hour clock, and be brief: short sentences or a few bullet points. "
+    + "Write plain text only, no Markdown (no ** or #); start list items with '- '."
 );
 
 # ------------------------------------------------------------------ the model call
@@ -291,14 +305,19 @@ def _api_key_set -> bool {
 def _friendly(e: Exception) -> str {
     text = str(e);
     name = type(e).__name__;
+    # The full error goes to the server log; the user gets a short message.
+    logging.getLogger("planner.assistant").error("assistant failed: %s: %s", name, text[:2000]);
     if "Authentication" in name or "API key" in text or "api_key" in text.lower() {
         return "The AI key isn't valid or isn't set. Add GEMINI_API_KEY to .env and restart the server (see README).";
     }
     if "RateLimit" in name or "429" in text or "quota" in text.lower() {
         return "The free AI quota is used up for now. Wait a minute (or until tomorrow) and try again.";
     }
-    if "NotFound" in name or "not found" in text.lower() {
-        return "The AI model name isn't available. Set BYLLM_DEFAULT_MODEL in .env (see README).";
+    if "503" in text or "high demand" in text or "overloaded" in text.lower() or "Unavailable" in name {
+        return "The AI models are busy right now. Try again in a minute.";
+    }
+    if "no longer available" in text or ("NotFound" in name and "model" in text.lower()) {
+        return "The AI model isn't available to your key. Set BYLLM_DEFAULT_MODEL in .env (see README).";
     }
     return "The assistant ran into a problem: " + text[:200];
 }
@@ -306,8 +325,11 @@ def _friendly(e: Exception) -> str {
 # ------------------------------------------------------------------ endpoints
 
 def:protect assistant_status -> AssistantStatus {
-    name = str(getattr(llm, "model_name", DEFAULT_MODEL));
-    return AssistantStatus(configured=_api_key_set() or not name.startswith("gemini/"), model=name);
+    names = _model_names();
+    return AssistantStatus(
+        configured=_api_key_set() or not names[0].startswith("gemini/"),
+        model=names[0].split("/")[-1] + (f" (+{len(names) - 1} fallback)" if len(names) > 1 else "")
+    );
 }
 
 """Send a chat message; returns the reply and a list of changes made."""

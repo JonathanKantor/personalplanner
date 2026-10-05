@@ -100,9 +100,13 @@ it", "Add a 2-hour paper due Friday 5pm", "I don't want to work after 8pm",
 
 Setup (free): get a Gemini API key at https://aistudio.google.com/apikey
 (sign in with a Google account; no credit card), put `GEMINI_API_KEY=...` in
-`.env`, then restart the server (`source env.sh && jac run`). The default
-model is `gemini/gemini-2.5-flash`; set `BYLLM_DEFAULT_MODEL` in `.env` to use
-another (any byLLM/LiteLLM model name).
+`.env`, then restart the server (`source env.sh && jac run`). The assistant
+uses a byLLM `ModelPool` that tries `gemini-3.6-flash`, then
+`gemini-3.5-flash-lite`, then `gemini-3.1-flash-lite`, so a busy model (Gemini's
+free tier often answers "503 high demand") falls through to the next. Google
+retires models (gemini-2.5-flash is closed to new keys); to change the list set
+`BYLLM_DEFAULT_MODEL` in `.env`, e.g. `gemini/gemini-3.8-flash,gemini/gemini-3.5-flash-lite`.
+Failures are logged on the server as "assistant failed: ...".
 
 How it works (`core/assistant.jac`, Jac's byLLM): `_assistant_turn` is a
 `by llm(tools=[...])` function. The model can only act through 12 planner
@@ -359,6 +363,12 @@ tests/            end-to-end endpoint tests
   rejects browser calls to `def:protect` functions (E5082); only `def:pub`
   functions and walkers get browser stubs there. `jac run` (dev) works. See
   "Known limitations".
+- **"Sources changed during preparation"** on `jac run`: Jac checks that no
+  file in the project folder changes while it compiles, including hidden
+  files. A Finder window open on the project folder rewrites `.DS_Store`
+  during the compile, so it fails every time. Fix: close that Finder window,
+  or lock the file once with `chflags uchg .DS_Store` (undo:
+  `chflags nouchg .DS_Store`). This repo's `.DS_Store` is locked.
 - **`jac run` flags go before the app name**: `jac run --port 8010 web`
   works; `jac run web --port 8010` silently ignores the port.
 - **`jacLogin(username, password)`**: the bundled client-auth guide says

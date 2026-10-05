@@ -109,6 +109,9 @@ test "model problems become readable messages" {
         _mock([MockError(error=Exception("429 RESOURCE_EXHAUSTED quota exceeded"))]);
         r = _call(client, "assistant_chat", {"message": "plan my week"});
         assert "quota" in r["error"], r["error"];
+        _mock([MockError(error=Exception("503 UNAVAILABLE: This model is currently experiencing high demand"))]);
+        r = _call(client, "assistant_chat", {"message": "plan my week"});
+        assert "busy" in r["error"], r["error"];
     } finally {
         client.close();
     }
