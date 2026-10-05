@@ -14,7 +14,7 @@ def:pub error_text(e: any) -> str {
     start = msg.find("{");
     if start >= 0 {
         try {
-            body: any = JSON.parse(msg[start:]);
+            body: any = JSON.parse(msg[start:]);  # jac:ignore[E1032]  (browser global)
             if body and body.error and body.error.message {
                 msg = body.error.message;
             }

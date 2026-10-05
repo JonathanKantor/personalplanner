@@ -58,3 +58,26 @@ enabled = false
 [apps.cli]
 kind = "cli"
 entry-point = "cli.main"
+
+# The mobile app's backend: walkers in core/mobile_api.jac, declared as a
+# service app so the mobile app can call them. `jac run web` runs it in the
+# same process as the web server (colocated), against the same database.
+[apps.mobile_api]
+kind = "service"
+entry-point = "core.mobile_api"
+
+[apps.mobile]
+kind = "mobile"
+entry-point = "mobile.main"
+
+[apps.mobile.dependencies.npm]
+react = "^18.2.0"
+react-dom = "^18.2.0"
+react-native-web = "^0.19.13"
+react-native-svg = "^15.13.0"
+lucide-react = "^0.469.0"
+lucide-react-native = "^0.469.0"
+
+[apps.mobile.dependencies.npm.native]
+react-native-svg = "^15.13.0"
+lucide-react-native = "^0.469.0"

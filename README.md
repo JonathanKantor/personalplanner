@@ -7,7 +7,7 @@ for the week, and recommends time slots around your classes.
 One backend serves four clients: a web app, a mobile app, a CLI, and the HTTP
 API itself.
 
-> Status: server, scheduler, CLI and web app done. Mobile app in progress.
+> Status: server, scheduler, CLI, web app and mobile app done.
 
 ## Setup
 
@@ -73,6 +73,46 @@ jac run                  # server + web app at http://localhost:8000
 The pages call server functions directly (`await suggest_schedule(7)`); Jac
 generates the HTTP calls. Times are converted to your timezone on the server
 (`core/views.jac`), so the browser does no timezone math.
+
+### Mobile app
+
+Today's schedule (classes + planned blocks), accept ✓ / reject ✗ suggestions,
+check off tasks, quick-add, and a Plan button. Built with `@jac/mobui`
+(React Native primitives: `View`, `Text`, `Pressable`, `TextInput`), so the
+same code runs in a browser and on a phone.
+
+```bash
+source env.sh
+jac run --dev --platform web mobile    # app: http://localhost:8000  (API on :8001)
+```
+
+Open it in a phone-sized browser window (or the browser's device toolbar).
+The dev server runs the mobile backend (`core/mobile_api.jac`) itself, against
+the same database as the web app, so log in with the same account. Run either
+this or the web app's `jac run`, not both at once (they share the dev build
+folder and the ports).
+
+On a real phone: install **Expo Go**, put the phone on the same Wi-Fi as the
+laptop, then (the setup step needs ~0.5 GB of disk for the Expo install)
+
+```bash
+jac setup mobile          # one-time Expo scaffold into .jac/mobile-rn/
+jac run --dev mobile      # prints a QR code; scan it with Expo Go
+```
+
+`--dev` detects your laptop's LAN address and points the app at it (Metro on
+:8081, API on :8000; override with `JAC_RN_DEV_HOST=<ip>`). Verified here: the
+Expo setup and dev server start. Not verified: an actual phone connecting.
+Campus Wi-Fi often blocks device-to-device connections; a phone hotspot or
+home network avoids that. Native iOS/Android builds need Xcode / the Android SDK.
+
+**Why walkers:** the mobile app is a separate app in the workspace, and Jac
+only lets one app call another's *walkers* or `def:pub` functions. So its API
+is five login-required walkers in `core/mobile_api.jac`, declared as the
+`mobile_api` service app in `jac.toml`. `FinishTask` and `DecideBlock` show
+graph traversal: they walk `root -> Task -> (ScheduledAs) -> TimeBlock`.
+
+Smoke test (with the mobile dev server running): `bash scripts/mobile_smoke.sh`
 
 ### CLI
 
@@ -214,6 +254,7 @@ core/             shared backend (no UI)
   planner.jac       runs the scheduler on your stored data (engine glue)
   planning.jac      planning endpoints: suggest/accept/reject/adjust, agenda, progress
   views.jac         ready-to-draw day/week views in your timezone (web + mobile)
+  mobile_api.jac    walkers the mobile app calls (the `mobile_api` service app)
   seed.jac          demo data
   *.test.jac        unit tests for the module of the same name
 web/              the web app; its main.jac registers every endpoint
@@ -221,6 +262,7 @@ web/              the web app; its main.jac registers every endpoint
   components/       WeekGrid.jac
   lib/ui.jac        error-message and time helpers
   styles/global.css
+mobile/           the phone app (mobUI): main.jac, screens/, components/, theme.jac, lib.jac
 cli/              the `plan` command (talks to the server over HTTP)
   api.jac           HTTP calls + login token storage
   commands.jac      one function per command
@@ -252,7 +294,23 @@ tests/            end-to-end endpoint tests
   a plain import duplicates the class the generated RPC stub already defines.
 - **Don't pin endpoint modules** in `[placement.pins]`: in 0.37.14 a pinned
   endpoint's browser stub loses its parameters (calls arrive with no arguments).
+- **Production web build**: `jac build web` (the sealed deploy artifact)
+  rejects browser calls to `def:protect` functions (E5082); only `def:pub`
+  functions and walkers get browser stubs there. `jac run` (dev) works. See
+  "Known limitations".
 - **`jacLogin(username, password)`**: the bundled client-auth guide says
   `email`, but usernames work (verified); the CLI and web share accounts.
 - **Module names**: don't name a module after a Python standard-library
   module (e.g. `calendar.jac`); it shadows the real one during `jac test`.
+
+## Known limitations
+
+- `jac build web` (production artifact) currently fails: the web pages call
+  login-protected `def:protect` functions, which the sealed build won't
+  expose to the browser. Development mode (`jac run`) is unaffected. Fix
+  options: switch the web pages to walkers (like the mobile app), or make the
+  endpoints `def:pub` with an explicit "must be logged in" check.
+- The phone (Expo Go) path starts correctly but hasn't been tried on a device.
+- In dev mode, server errors include a Python traceback in the response
+  (`details`); the apps only show the message.
+
