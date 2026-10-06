@@ -1,13 +1,117 @@
 # Jonathan Kantor (kantorj) Personal Planner
 
-A personal schedule planner written in [Jac](https://jaseci.org). It imports
-your class schedule from Google Calendar (or an `.ics` file), takes your tasks
-for the week, and recommends time slots around your classes.
+- **Name:** Jonathan Kantor
+- **Uniqname:** kantorj
+- **UMID:** `________` <!-- fill in your 8-digit UMID -->
 
-One backend serves four clients: a web app, a mobile app, a CLI, and the HTTP
-API itself.
+## What it is
 
-> Status: server, scheduler, CLI, web app and mobile app done.
+**morrow** is a personal schedule planner written in [Jac](https://jaseci.org).
+It reads your class schedule from Google Calendar (or an `.ics` file / iCal
+link), takes your tasks (typed in, or imported from Canvas), and suggests when
+to work on each one: around your classes and meetings, and before its
+deadline. You accept, adjust or reject each suggestion. One backend serves four
+components (the **server/API**, a **web app**, a **mobile app** and a **CLI**)
+on the same accounts and data.
+
+### Main features
+
+- **Calendar import:** Google Calendar (read-only OAuth), `.ics` files or
+  private iCal links; mark which calendars or recurring events are classes.
+- **Tasks** with a due date, priority, time estimate, course and notes;
+  repeating tasks (`WEEKLY:MO,WE`); **Canvas assignments** imported from the
+  Canvas calendar feed, with your own estimates.
+- **Deterministic scheduler:** fits work into free time in each task's due
+  week, before its deadline, respecting working hours, days off, a preferred
+  study window, breaks and a daily focus limit. Every suggestion says why it
+  was chosen, and anything that doesn't fit says why not.
+- **Accept / adjust / reject:** ✓ / ✗ on each suggestion, drag a block to
+  move it, click to edit, Accept all, Clear; add your own events (meetings not
+  in Google Calendar) and the planner works around them.
+- **AI assistant ("Ask Morrow"):** chat to plan ("Plan my week", "Add a
+  2-hour paper due Friday 5pm", "I don't work after 8pm"). It can only act
+  through the planner's own tools, uses the same scheduler, and lists every
+  change it makes. Runs on Google's free Gemini tier.
+- **Web app:** week grid and agenda views, a "Coming up" list with weekly
+  follow-through, keyboard shortcuts, a Cmd/Ctrl+K command palette, and a
+  floating assistant whose eyes follow your mouse.
+- **Mobile app** (Expo Go, or a browser) with the same features and look, and
+  a **CLI** (`plan suggest`, `plan accept all`, ...).
+
+## Quick start
+
+Prerequisites: macOS or Linux; on macOS 14, Homebrew's `expat` (below); for
+the phone app, the **Expo Go** app on a phone on the same network. Google
+Calendar and the AI assistant are optional (each needs a key in `.env`, see
+below); everything else works with the built-in demo data.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jaseci-labs/jaseci/main/scripts/install.sh | bash   # Jac
+brew install expat                 # macOS 14 only, once
+cd personal-assistant
+cp .env.example .env               # optional: GEMINI_API_KEY, GOOGLE_CLIENT_ID / _SECRET
+source env.sh                      # in every new terminal
+jac install                        # project dependencies, once
+jac run                            # server + web app: http://localhost:8000
+```
+
+Open http://localhost:8000, sign up, then **Settings → Load demo classes and
+tasks**, then **Planner → Suggest schedule**. Each step is explained below.
+
+## How the four components fit together
+
+```
+            ┌─────────────── one Jac server (jac run) ───────────────┐
+ web app ──▶│ def:protect functions  ─┐                              │
+ (React,    │  POST /function/<name>  │                              │
+  same app) │                         ├─▶ core/ ── per-user graph:   │
+ mobile ───▶│ walkers (mobile_api)  ──┤    tasks, blocks, calendars, │
+ (Expo Go)  │  POST …/walker/<Name>   │    events, preferences, chat │
+ CLI ──────▶│ same HTTP endpoints   ──┘                              │
+ (plan …)   └────────────────────────────────────────────────────────┘
+```
+
+- **Server / API (`core/`)** holds all the logic: calendar import and sync,
+  tasks, the scheduler, the AI assistant, Canvas import. Data lives in each
+  user's own graph (Jac nodes and edges under their `root`), so every query is
+  automatically scoped to the logged-in user. Login-required endpoints are
+  plain Jac functions (`def:protect`); `/docs` lists them all.
+- **Web app (`web/`)** is a Jac client app in the same workspace: its pages
+  call the server functions directly (`await suggest_schedule(21)`) and Jac
+  generates the HTTP calls. The server pre-computes views in your timezone
+  (`core/views.jac`), so the browser does no date math.
+- **Mobile app (`mobile/`)** is a separate mobUI app (React Native). Jac only
+  lets one app call another's *walkers*, so `core/mobile_api.jac` exposes
+  login-required walkers, each a thin wrapper around the same core function
+  the web uses. Same data, same behaviour.
+- **CLI (`cli/`)** is a Jac command-line app that logs in and calls the same
+  HTTP endpoints, storing its token in `~/.config/jac-planner/`.
+
+### What makes it impressive
+
+- **One backend, four real clients**, all sharing accounts and data, with no
+  logic duplicated: the web, phone, CLI and assistant all go through the same
+  core functions and the same scheduler.
+- **An explainable, deterministic scheduler** (pure functions, 29 unit tests):
+  due-week work windows with overflow, joined sessions, focus limits, breaks,
+  preferred hours, rejected slots never re-offered, and a reason on every
+  suggestion and every "couldn't fit".
+- **A safe AI assistant**: byLLM with tool calling. The model can only use 14
+  planner tools (no delete), finds time with the deterministic scheduler
+  instead of inventing it, and falls back across free Gemini models when one is
+  busy. Tests run with byLLM's `MockLLM`, no key needed.
+- **Real integrations**: Google Calendar OAuth (read-only, tokens never in
+  git), `.ics` parsing with recurrence, and Canvas feeds (deduplicated,
+  re-syncable).
+- **Jac features used for what they're for**: graph data model
+  (`root -> Task -> ScheduledAs -> TimeBlock`), walkers for the phone,
+  `def:protect` endpoints, byLLM, a shared `core/` across a multi-app
+  workspace, and Jac test annexes.
+- **A designed UI on web and phone** from one set of design tokens, with
+  keyboard shortcuts, a command palette, accessibility labels, reduced-motion
+  support, and Morrow's eye-tracking avatar.
+- **560+ automated tests**: scheduler, parsers and recurrence unit tests, and
+  end-to-end tests of every endpoint and walker.
 
 ## Setup
 
@@ -56,7 +160,7 @@ jac run                  # server + web app at http://localhost:8000
 ```
 
 - Web app: http://localhost:8000 (sign up, then Settings -> "Load demo classes
-  and tasks", then Week -> "Suggest schedule")
+  and tasks", then Planner -> "Suggest schedule")
 - API docs (every endpoint, try them in the browser): http://localhost:8000/docs
 - Run all tests: `jac test` (one file: `jac test core/scheduler.jac`)
 
@@ -64,13 +168,17 @@ jac run                  # server + web app at http://localhost:8000
 
 | Page | What it does |
 |---|---|
-| `/login` | log in or sign up (same accounts as the CLI) |
-| `/` Week | classes, events and planned blocks in one grid; **Suggest schedule**; accept ✓ / reject ✗ in the grid, or Accept / Adjust / Reject with the reason in the Suggestions list; **click** a block or a "due:" label to edit the task; **drag** a block to another time or day (snaps to 15 min, keeps its length; moving a suggestion accepts it; drops onto classes/events/other planned blocks are refused); **+ Add event** for meetings not in Google Calendar (one-off or weekly; click to edit/delete, drag to move); **Clear suggestions** removes all pending suggestions (planned blocks stay); prev/next week |
-| `/tasks` | add tasks; click a task (or Edit) to edit, complete or delete it |
-| `/settings` | preferences, Connect Google Calendar, import an `.ics` file or iCal URL, mark calendars / recurring events as classes, load demo data |
+| `/login` | log in or sign up (same accounts as the phone app and CLI) |
+| `/` Planner | week grid (or Agenda): classes in blue, your events, planned work and deadlines in coral (round checkbox = done), suggestions in dashed amber with ✓ / ✗. **Suggest schedule**, **Accept all**, **Clear**; **click** a block or deadline to edit the task (or change a block's time); **drag** a block or your own event to another time or day; **Add task** / **Add event** (one-off or weekly). Right side: **Coming up** and weekly follow-through. Deadlines after the visible hours are listed under the day's date |
+| `/tasks` | every task, soonest first: tick to finish or reopen, click to edit or delete, Open / All, Add task |
+| `/assistant` | full-page chat with the AI assistant (also the floating "Ask Morrow" button on every page) |
+| `/settings` | name, city, hours and limits, days off; Connect Google Calendar; import an `.ics` file or iCal URL; mark calendars / recurring events as classes; **Canvas assignments**; load demo data |
 | `/oauth/callback` | where Google returns after the consent screen; finishes the connection |
 
-The pages call server functions directly (`await suggest_schedule(7)`); Jac
+**Keyboard** (Planner): `T` this week, `←`/`K` and `→`/`J` change week, `N`
+add event, `A` add task; **Cmd/Ctrl+K** opens the command palette anywhere.
+
+The pages call server functions directly (`await suggest_schedule(21)`); Jac
 generates the HTTP calls. Times are converted to your timezone on the server
 (`core/views.jac`), so the browser does no timezone math.
 
@@ -95,7 +203,8 @@ press **Load assignments**. Tick the ones to import, set each estimate (or
 
 ### AI planning assistant
 
-Web app -> **Assistant** tab: chat to plan, e.g. "Plan my week and explain
+Web app -> **Ask Morrow** (the floating button, or the Assistant page), or the
+phone's Ask Morrow tab: chat to plan, e.g. "Plan my week and explain
 it", "Add a 2-hour paper due Friday 5pm", "I don't want to work after 8pm",
 "When am I free Thursday afternoon?". Each reply lists what it changed.
 
@@ -110,9 +219,10 @@ retires models (gemini-2.5-flash is closed to new keys); to change the list set
 Failures are logged on the server as "assistant failed: ...".
 
 How it works (`core/assistant.jac`, Jac's byLLM): `_assistant_turn` is a
-`by llm(tools=[...])` function. The model can only act through 12 planner
+`by llm(tools=[...])` function. The model can only act through 14 planner
 tools (see the calendar, list/add/update/complete tasks, run the scheduler,
-accept/reject/move blocks, read/change preferences); there is no delete tool.
+accept/reject/move blocks, add events, clear suggestions, read/change
+preferences); there is no delete tool.
 To find time it runs the same deterministic scheduler as the "Suggest
 schedule" button rather than inventing slots, and it accepts suggestions only
 when you agree. Your conversation is stored per user (New chat clears it).
@@ -120,39 +230,52 @@ Tests use byLLM's `MockLLM` (no key needed): `tests/assistant_api_tests.jac`.
 
 ### Mobile app
 
-Today's schedule (classes + planned blocks), accept ✓ / reject ✗ suggestions,
-check off tasks, quick-add, and a Plan button. Built with `@jac/mobui`
-(React Native primitives: `View`, `Text`, `Pressable`, `TextInput`), so the
-same code runs in a browser and on a phone.
+The phone app has the web app's features and look, as four tabs:
+
+- **Plan**: a week strip (tap a day, ‹ › for weeks), that day's classes,
+  events and planned / suggested work (✓ / ✗ on suggestions), what's due
+  (tick to finish), **Suggest / Accept all / Clear**, "Couldn't fully
+  schedule", and Coming up. Tap an item to edit it in a bottom sheet (tasks:
+  every field, mark done, delete; blocks: accept, reject or **change time**;
+  your events: edit or delete). **+ Task / + Event** add new ones.
+- **Tasks**: soonest first, tick to finish / reopen, tap to edit, Add task.
+- **Ask Morrow**: the same assistant and conversation as the web.
+- **Settings**: name, city, hours and limits, days off, Canvas import, demo
+  data, log out.
+
+Google Calendar, `.ics` uploads, marking classes and dragging blocks are on
+the web app. Built with `@jac/mobui` (React Native primitives), so the same
+code runs on a phone and in a browser.
+
+**On your phone (Expo Go):** install **Expo Go**, put the phone on the same
+network as the laptop (a phone hotspot works; campus Wi-Fi often blocks
+device-to-device traffic), stop any other `jac run`, then:
 
 ```bash
 source env.sh
-jac run --dev --platform web mobile    # app: http://localhost:8000  (API on :8001)
+jac setup mobile                    # once: Expo scaffold into .jac/mobile-rn/ (~0.5 GB)
+bash scripts/fix_mobile_native.sh   # once: jac 0.37.14 workaround (see below)
+bash scripts/phone_dev.sh           # starts the server + Metro, prints a QR code
 ```
 
-Open it in a phone-sized browser window (or the browser's device toolbar).
-The dev server runs the mobile backend (`core/mobile_api.jac`) itself, against
-the same database as the web app, so log in with the same account. Run either
-this or the web app's `jac run`, not both at once (they share the dev build
-folder and the ports).
-
-On a real phone: install **Expo Go**, put the phone on the same Wi-Fi as the
-laptop, then (the setup step needs ~0.5 GB of disk for the Expo install)
-
-```bash
-jac setup mobile                    # one-time Expo scaffold into .jac/mobile-rn/
-bash scripts/fix_mobile_native.sh   # one-time jac 0.37.14 workaround (see below)
-bash scripts/phone_dev.sh           # prints a QR code; scan it with Expo Go
-```
+Scan the QR code with Expo Go (iPhone: the Camera app) and log in with the
+same account as the web app. If the app looks stale, shake the phone and tap
+Reload. If it won't start, `rm -rf .jac/client/mobile/compiled` and run the
+script again.
 
 Use `scripts/phone_dev.sh`, not `jac run --dev mobile` on its own: in jac
 0.37.14 that command starts its API server by building a native Android APK,
 which fails without the Android SDK ("Invalid or corrupt jarfile ...
 gradle-wrapper.jar"). The app still loads (Metro serves it) but has no server,
 so login and signup fail. The script runs the real API (`jac run --port 8000
---no-client web`, which includes the mobile walkers) on the port the phone is
-told to use, and restores the API address the failed build blanks out. The
-Gradle error still prints once; ignore it.
+--no-client web`, which includes the mobile walkers, against the web app's
+data) on the port the phone is told to use, and restores the API address the
+failed build blanks out. The Gradle error still prints once; ignore it.
+
+**In a browser:** `jac build --platform web mobile` builds the phone app for
+the web (`.jac/client/mobile/dist/`). Note that `jac run --dev --platform web
+mobile` runs its own separate data store, so use your web account's data via
+the phone instead.
 
 **Workaround for phones:** in jac 0.37.14 the native runtime that Metro uses
 is missing `useJacState`, which the compiler emits for every component's `has`
@@ -160,26 +283,25 @@ state, so every screen crashes in Expo Go with "TypeError: undefined is not a
 function". `scripts/fix_mobile_native.sh` points Metro's `@jac/runtime` at
 `mobile/native-fix/jac_runtime_shim.js`, which re-exports the native runtime
 and adds `useJacState` (copied from the browser runtime). Re-run it if you
-delete `.jac/mobile-rn`, and restart `jac run --dev mobile` after running it.
+delete `.jac/mobile-rn`, then restart `scripts/phone_dev.sh`.
 
-`--dev` detects your laptop's LAN address and points the app at it (Metro on
-:8081, API on :8000; override with `JAC_RN_DEV_HOST=<ip>`). Verified here: the
-Expo setup, the dev server, and that Metro's iOS bundle includes the fix. Not
-verified here: the app running on a phone.
-Campus Wi-Fi often blocks device-to-device connections; a phone hotspot or
-home network avoids that. Native iOS/Android builds need Xcode / the Android SDK.
+The dev setup detects your laptop's LAN address and points the app at it
+(Metro on :8081, API on :8000; override with `JAC_RN_DEV_HOST=<ip>`). Native
+iOS/Android builds (instead of Expo Go) need Xcode / the Android SDK.
 
 **Why walkers:** the mobile app is a separate app in the workspace, and Jac
 only lets one app call another's *walkers* or `def:pub` functions. So its API
-is five login-required walkers in `core/mobile_api.jac`, declared as the
+is a set of login-required walkers in `core/mobile_api.jac` (one per screen
+action, each calling the same core function as the web app), declared as the
 `mobile_api` service app in `jac.toml`. `FinishTask` and `DecideBlock` show
 graph traversal: they walk `root -> Task -> (ScheduledAs) -> TimeBlock`.
-
-Smoke test (with the mobile dev server running): `bash scripts/mobile_smoke.sh`
+Tests: `tests/mobile_api_tests.jac`; browser smoke test of the screens:
+`bash scripts/mobile_smoke.sh`.
 
 ### CLI
 
-The server must be running (`jac run` in another terminal). Then:
+The CLI talks to the same server, so start it first (`jac run` in another
+terminal). Then, from the project folder:
 
 ```bash
 export PATH="$PATH:$(pwd)/bin"      # once per terminal (or add to ~/.zshrc)
@@ -240,7 +362,7 @@ recurring series (e.g. "EECS 376 Lecture", listed by `list_series`) with
 
 ## Scheduling
 
-`suggest_schedule(days=7)` plans the next 1–28 days and returns suggested
+`suggest_schedule(days=21)` plans the next 1–28 days and returns suggested
 blocks, each with a reason, plus any task that didn't fit and why:
 
 ```
@@ -257,9 +379,8 @@ the assistant plan 3 weeks ahead (`suggest_schedule(days=21)`):
 3. **Work window**: each task is worked on close to its deadline, from the
    Monday of its due week (or 3 days before the due date, if earlier, so a
    Monday deadline can use the weekend) up to the deadline. Inside it: the
-   earliest free time, your preferred study window first each day. Sessions
-   are 30–120 min (long tasks are split), and the daily focus cap is never
-   exceeded.
+   earliest free time, your preferred study window first each day. Work is
+   placed in 30–120 min pieces, and the daily focus cap is never exceeded.
 4. **Overflow**: if the window is full, the rest goes into the days just
    before it, nearest first (the block's reason says "earlier than its due
    week"). Tasks whose window hasn't started yet are left for a later plan.
@@ -346,15 +467,16 @@ web/              the web app; its main.jac registers every endpoint
   components/       kit.jac (Button, Card, Chip, Dialog, ...), WeekGrid, EventBlock, ComingUp,
                     AskMorrow + AssistantChat, CommandPalette, CanvasImport, editors
   lib/ui.jac        error-message and time helpers
-  styles/global.css
-mobile/           the phone app (mobUI): main.jac, screens/, components/, theme.jac, lib.jac
+  styles/           tokens.css (every design value), global, components, calendar
+mobile/           the phone app (mobUI): main.jac (tabs), screens/ (Plan, Tasks, Assistant,
+                    Settings, Login), components/ (kit, sheets, EventRow, ...), theme.jac, lib.jac
   native-fix/       runtime shim for phones (see "Workaround for phones")
 cli/              the `plan` command (talks to the server over HTTP)
   api.jac           HTTP calls + login token storage
   commands.jac      one function per command
   main.jac          argument parsing
 bin/plan          wrapper so you can type `plan ...` anywhere
-tests/            end-to-end endpoint tests
+tests/            end-to-end tests of every endpoint and mobile walker
 ```
 
 ## Jac notes (things that surprised us)
