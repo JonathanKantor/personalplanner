@@ -16,7 +16,7 @@ import from core.timeutil { parse_due, to_iso, now_utc }
 import from core.preferences { _prefs }
 import from core.changes { check_keys, get_str, get_int, as_int }
 import from core.recurrence { parse_rule }
-import from core.planner { replan_if_pending }
+import from core.planner { replan_if_pending, _update_task_status }
 
 
 """Find one of the caller's tasks by id. Only searches this user's root."""
@@ -125,6 +125,9 @@ def:protect update_task(id: str, changes: dict) -> TaskView {
     t.category = get_str(changes, "category", t.category).strip();
     t.recurrence = recurrence;
     _set_status(t, status);
+    if status != TaskStatus.DONE {
+        _update_task_status(t);        # reopened / re-estimated: "planned" if its blocks cover it
+    }
     replan_if_pending();
     return t.to_view();
 }

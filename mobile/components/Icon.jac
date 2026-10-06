@@ -5,11 +5,17 @@ file otherwise. Both export the same `Icon` API, so screens never branch on
 platform. Keep the `LUCIDE` keys identical in the two files.
 """
 
-import from "lucide-react" { Check, Plus, Sparkles, ChevronLeft, ChevronRight, X, Circle, LogOut }
+import from "lucide-react" {
+    Check, Plus, Sparkles, ChevronLeft, ChevronRight, X, Circle, LogOut, CalendarDays,
+    ListChecks, MessageCircle, Settings, Trash2, Clock, GraduationCap, BookOpen, Send
+}
 
 glob LUCIDE = {
     "check": Check, "plus": Plus, "sparkles": Sparkles, "left": ChevronLeft,
-    "right": ChevronRight, "x": X, "circle": Circle, "logout": LogOut
+    "right": ChevronRight, "x": X, "circle": Circle, "logout": LogOut,
+    "calendar": CalendarDays, "tasks": ListChecks, "chat": MessageCircle,
+    "settings": Settings, "trash": Trash2, "clock": Clock, "cap": GraduationCap,
+    "book": BookOpen, "send": Send
 };
 
 def:pub Icon(name: str, size: int, color: str) -> JsxElement {

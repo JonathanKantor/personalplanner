@@ -7,9 +7,10 @@ On a phone, `jacLogin` keeps the session token in secure storage
 import from "@jac/mobui" { View, Text, TextInput, ScrollView, Pressable }
 import from "@jac/runtime" { jacLogin, jacSignup, SignupResult }
 import from ..theme { C, S, F, styles }
-import from ..components.Button { Button }
+import from ..components.kit { Button, Card }
+import from ..components.MorrowFace { MorrowFace }
 
-def:pub LoginScreen(onLoggedIn: Callable[[], None]) -> JsxElement {
+def:pub LoginScreen(onLoggedIn: Callable[[], None], pointer: list[float]) -> JsxElement {
     has username: str = "",
         password: str = "",
         signing_up: bool = False,
@@ -42,25 +43,27 @@ def:pub LoginScreen(onLoggedIn: Callable[[], None]) -> JsxElement {
         }
     }
 
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-            <Text style={styles.title}>Planner</Text>
-            <Text style={styles.subtitle}>{"Create your account" if signing_up else "Log in to see today"}</Text>
-        </View>
-        <View style={styles.panel}>
+    <ScrollView style={styles.screen} contentContainerStyle={[styles.content, {"paddingTop": S.xxl * 2}]}>
+        <Card>
+            <View style={[styles.row, {"gap": S.md, "marginBottom": S.md}]}>
+                <MorrowFace pointer={pointer}/>
+                <Text style={{"color": C.text, "fontSize": F.lg, "fontWeight": "700"}}>morrow</Text>
+            </View>
+            <Text style={[styles.h1, {"fontSize": F.xl}]}>{"Create your account" if signing_up else "Welcome back"}</Text>
+            <Text style={styles.subtitle}>{"A little more room to think, starting now." if signing_up else "Log in to see your week."}</Text>
             <TextInput testID="username" style={styles.input} value={username} placeholder="Username"
-                placeholderTextColor={C.muted} autoCapitalize="none"
+                placeholderTextColor={C.subtle} autoCapitalize="none"
                 onChangeText={lambda (t: str) { username = t; }} />
             <TextInput testID="password" style={styles.input} value={password} placeholder="Password"
-                placeholderTextColor={C.muted} secureTextEntry={True}
+                placeholderTextColor={C.subtle} secureTextEntry={True}
                 onChangeText={lambda (t: str) { password = t; }} onSubmitEditing={submit} />
             {(<Text style={styles.error}>{error}</Text>) if error else <View/>}
-            <Button label={"Sign up" if signing_up else "Log in"} onPress={submit} disabled={busy}/>
+            <Button label={"Sign up" if signing_up else "Log in"} variant="primary" onPress={submit} disabled={busy} testID="login-submit"/>
             <Pressable onPress={lambda { signing_up = not signing_up; error = ""; }}>
                 <Text style={{"color": C.accent, "fontSize": F.sm, "textAlign": "center", "marginTop": S.sm}}>
                     {"Have an account? Log in" if signing_up else "New here? Create an account"}
                 </Text>
             </Pressable>
-        </View>
+        </Card>
     </ScrollView>
 }
