@@ -1,4 +1,4 @@
-# Planner
+# Jonathan Kantor (kantorj) Personal Planner
 
 A personal schedule planner written in [Jac](https://jaseci.org). It imports
 your class schedule from Google Calendar (or an `.ics` file), takes your tasks
