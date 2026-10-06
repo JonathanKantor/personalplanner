@@ -101,7 +101,7 @@ walker QuickAdd {
 
 """Plan the next `days` days, same as the web's "Suggest schedule"."""
 walker PlanAhead {
-    has days: int = 7,
+    has days: int = 21,
         reports: list[PlanView] = [];
 
     can plan with Root entry {

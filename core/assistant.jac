@@ -184,7 +184,7 @@ def tool_plan(days: int) -> str {
     return "\n".join(lines) if lines else "Nothing to plan: no open tasks need time.";
 }
 sem tool_plan = "Run the deterministic scheduler: replaces earlier SUGGESTED blocks with new suggestions (accepted blocks never move) and returns them with block ids and reasons. Suggestions are not final until accepted.";
-sem tool_plan.days = "How many days ahead to plan (1-28, usually 7).";
+sem tool_plan.days = "How many days ahead to plan (1-28, usually 21). Work is placed in each task's due week (plus a few days before), never piled into the current week, so plan far enough ahead to cover the due dates.";
 
 def tool_accept(block_ids: list[str]) -> str {
     try {

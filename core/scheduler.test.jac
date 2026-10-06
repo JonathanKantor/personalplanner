@@ -215,3 +215,36 @@ test "same input always gives the same plan" {
     second = [(x.task_id, x.start) for x in plan(list(reversed(tasks)), prefs(), busy, {}, week()).placements];
     assert first == second;
 }
+
+# ------------------------------------------------------------------ work windows (due week + a few days)
+# Day numbers past 6 are the following week: at(7, ...) = Mon Oct 26.
+
+def two_weeks -> Interval {
+    return Interval(start=at(0, "09:00"), end=at(12, "23:00"));
+}
+
+test "work goes in the due week, not the earliest free week" {
+    result = plan([task("essay", 120, at(10, "17:00"))], prefs(), [], {}, two_weeks());
+    assert hours([Interval(start=p.start, end=p.end) for p in result.placements]) == ["Mon 09:00-11:00"], result.placements;
+    assert result.placements[0].start >= at(7, "00:00");
+}
+
+test "a Monday deadline can use the few days before it" {
+    result = plan([task("quiz prep", 60, at(7, "12:00"))], prefs(), [], {}, two_weeks());
+    assert hours([Interval(start=p.start, end=p.end) for p in result.placements]) == ["Fri 09:00-10:00"], result.placements;
+}
+
+test "a full due week overflows into the days just before it, nearest first" {
+    # Window for a Wed deadline: Sun..Wed = 4 days x 120 min cap = 480 of 600.
+    result = plan([task("project", 600, at(9, "17:00"))], prefs(max_focus_minutes_per_day=120), [], {}, two_weeks());
+    days = sorted({p.start.astimezone(ZoneInfo(TZ)).date() for p in result.placements});
+    assert days[0] == at(5, "00:00").date(), days;                 # Saturday, not Monday of week 1
+    assert len(result.unplaced) == 0, result.unplaced;
+    early = [p for p in result.placements if p.start < at(6, "00:00")];
+    assert len(early) == 1 and "earlier than its due week" in early[0].reason, early;
+}
+
+test "tasks whose work window hasn't started are left for later" {
+    result = plan([task("later", 60, at(12, "17:00"))], prefs(), [], {}, week());
+    assert result.placements == [] and result.unplaced == [], result;
+}

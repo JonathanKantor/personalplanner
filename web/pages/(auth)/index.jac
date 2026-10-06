@@ -9,11 +9,11 @@ import from "react" { useEffect }
 import from "@jac/runtime" { Link }
 import from core.views { get_week_view, get_coming_up }
 import from core.planning { suggest_schedule, accept_block, reject_block, accept_all, adjust_block }
-import type from core.models { WeekView, PlanView, DayItem, ComingUpView }
+import type from core.models { WeekView, DayItem, ComingUpView, UnscheduledView }
 import from ...components.WeekGrid { WeekGrid }
 import from ...components.AgendaList { AgendaList }
 import from ...components.ComingUp { ComingUp }
-import from core.tasks { complete_task, update_task }
+import from core.tasks { complete_task, update_task, list_tasks }
 import from ...components.TaskEditor { TaskEditor }
 import from ...components.EventEditor { EventEditor }
 import from ...components.PageHeader { PageHeader }
@@ -24,7 +24,9 @@ import from ...lib.ui { error_text, hhmm, tz_name, typing_in_field, mod_key }
 
 def:pub WeekPage() -> JsxPage {
     has week: WeekView | None = None,
-        plan: PlanView | None = None,      # result of the last "Suggest schedule"
+        # Tasks the last "Suggest schedule" couldn't fit (kept up to date on
+        # reload: done, deleted or fully planned tasks drop off).
+        unscheduled: list[UnscheduledView] = [],
         start: str = "",                   # any date in the shown week; "" = this week
         error: str = "",
         busy: bool = False,
@@ -45,6 +47,10 @@ def:pub WeekPage() -> JsxPage {
         try {
             week = await get_week_view(start);
             coming = await get_coming_up(6, start);
+            if len(unscheduled) > 0 {
+                still_open = {t.id: t.status for t in await list_tasks("")};
+                unscheduled = [u for u in unscheduled if still_open.get(u.task_id, "done") == "todo"];
+            }
         } except Exception as e {
             error = error_text(e);
         }
@@ -116,7 +122,7 @@ def:pub WeekPage() -> JsxPage {
     async def suggest {
         begin();
         try {
-            plan = await suggest_schedule(7);
+            unscheduled = (await suggest_schedule(21)).unscheduled;
         } except Exception as e {
             error = error_text(e);
         }
@@ -147,7 +153,7 @@ def:pub WeekPage() -> JsxPage {
         begin();
         try {
             await accept_all();
-            plan = None;
+            unscheduled = [];
         } except Exception as e {
             error = error_text(e);
         }
@@ -231,7 +237,7 @@ def:pub WeekPage() -> JsxPage {
         notice = "";
         try {
             n = await clear_suggestions();
-            plan = None;
+            unscheduled = [];
             notice = "Cleared " + str(n) + " suggestion" + ("s" if n != 1 else "") + ". Your planned blocks are unchanged.";
         } except Exception as e {
             error = error_text(e);
@@ -302,11 +308,11 @@ def:pub WeekPage() -> JsxPage {
                 </div>
             </Card>
 
-            {if plan and len(plan.unscheduled) > 0 {
+            {if len(unscheduled) > 0 {
                 <Card className="side-card mt-4">
                     <div className="side-card-head">Couldn't fully schedule</div>
                     <ul className="list unscheduled">
-                        {for u in plan.unscheduled {
+                        {for u in unscheduled {
                             <li key={u.task_id}><b>{u.title}</b>: {u.reason}</li>
                         }}
                     </ul>

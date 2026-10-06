@@ -144,3 +144,15 @@
 }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .cal-skeleton { animation: none; } }
+
+/* deadlines outside the visible hours: small rows under the day's date */
+.cal-due {
+  display: flex; align-items: center; gap: var(--space-1); width: 100%; min-width: 0;
+  padding: 1px var(--space-1); border-radius: var(--radius-block); cursor: pointer;
+  background: var(--deadline-bg); color: var(--deadline-text); font-size: var(--text-2xs); text-align: left;
+}
+.cal-due .check-circle { width: var(--space-3); height: var(--space-3); margin-top: 0; }
+.cal-due-title { flex: 1; min-width: 0; font-weight: var(--weight-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-due-time { flex: none; opacity: .8; }
+.cal-due.done { opacity: .55; }
+.cal-due.done .cal-due-title { text-decoration: line-through; }

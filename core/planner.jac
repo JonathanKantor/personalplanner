@@ -24,7 +24,7 @@ import from core.recurrence { next_dues }
 import from core.scheduler { plan, Interval, SchedPrefs, SchedTask }
 import from core.changes { as_int }
 
-glob DEFAULT_DAYS: int = 7;
+glob DEFAULT_DAYS: int = 21;         # 3 weeks: work is placed in each task's due week
 
 # ------------------------------------------------------------------ helpers
 

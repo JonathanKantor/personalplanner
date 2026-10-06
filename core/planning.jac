@@ -22,7 +22,7 @@ glob MAX_DAYS: int = 28;
 
 """Plan the next `days` days (default 7, max 28). Returns the new suggestions
 and anything that couldn't fit, with reasons."""
-def:protect suggest_schedule(days: int = 7) -> PlanView {
+def:protect suggest_schedule(days: int = 21) -> PlanView {
     days = as_int(days, "days");          # see core/changes.jac
     if days < 1 or days > MAX_DAYS {
         raise ValueError(f"days must be between 1 and {MAX_DAYS}");

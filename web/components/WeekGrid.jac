@@ -8,12 +8,16 @@ Interaction:
 - Drag a work block or one of your own events to another time or day
   (HTML drag-and-drop): snaps to 15 minutes, keeps its length.
 - Round checkbox on work/deadline blocks marks the task done.
+Deadlines due outside the visible hours (e.g. 11:59pm) are listed under the
+day's date instead of being drawn at the grid's edge, where they would sit
+on top of evening work.
 Classes, synced events and deadlines are fixed (not draggable).
 """
 
 import from "react" { useEffect }
 import type from core.models { WeekView, DayView, DayItem }
-import from ..lib.ui { hour_label, now_minutes, time_range }
+import from ..lib.ui { hour_label, now_minutes, time_range, clock_ampm }
+import from .kit { CheckCircle }
 import from .EventBlock { EventBlock, style_of, subtitle_of }
 
 glob HOUR_PX: int = 48,                  # keep in sync with --hour in tokens.css
@@ -63,15 +67,20 @@ def:pub WeekGrid(
     height = (hi - lo) * HOUR_PX // 60;
     hours = [h for h in range(lo, hi + 60, 60)];
 
-    """Where an item is drawn (start, end minutes). Deadlines are a short
-    block ending at the due time; ones due outside the visible hours sit at
-    the top or bottom edge (their subtitle still says when they're due)."""
+    """Is the item drawn in the grid? All-day events and deadlines outside
+    the visible hours go in the day header instead."""
+    def in_grid(it: DayItem) -> bool {
+        if it.all_day { return False; }
+        return it.kind != "deadline" or (lo + DEADLINE_LEN <= it.end_min and it.end_min <= hi);
+    }
+
+    """Where an item is drawn (start, end minutes). A deadline is a short
+    block ending at its due time."""
     def span(it: DayItem) -> tuple[int, int] {
         if it.kind != "deadline" {
             return (it.start_min, it.end_min);
         }
-        end = max(lo + DEADLINE_LEN, min(it.end_min, hi));
-        return (end - DEADLINE_LEN, end);
+        return (it.end_min - DEADLINE_LEN, it.end_min);
     }
 
     """Side-by-side lanes for overlapping items in one day: returns
@@ -79,7 +88,7 @@ def:pub WeekGrid(
     order; each goes in the first lane that's free, and every item in a group
     of mutually overlapping items gets the same width."""
     def lanes(items: list[DayItem]) -> dict {
-        timed = sorted([it for it in items if not it.all_day], key=lambda (it: DayItem) { span(it)[0]; });
+        timed = sorted([it for it in items if in_grid(it)], key=lambda (it: DayItem) { span(it)[0]; });
         out: dict = {};
         group: list[DayItem] = [];
         lane_ends: list[int] = [];
@@ -179,7 +188,18 @@ def:pub WeekGrid(
                 <div className="cal-weekday">{d.label[0:3]}</div>
                 <div className="cal-daynum num">{d.date[8:10].lstrip("0")}</div>
                 {for it in d.items {
-                    if it.all_day { <div key={it.id} className="cal-allday" title={it.title}>{it.title}</div> }
+                    if it.all_day {
+                        <div key={it.id} className="cal-allday" title={it.title}>{it.title}</div>
+                    } elif not in_grid(it) {
+                        <div key={it.id} className={"cal-due" + (" done" if it.done else "")}
+                             title={it.title + " · " + subtitle_of(it) + " " + clock_ampm(it.end_min)}
+                             onClick={lambda (ev: MouseEvent) { open_item(it, d.date); }}>
+                            <CheckCircle checked={it.done} label={("Mark not done: " if it.done else "Mark done: ") + it.title}
+                                onToggle={lambda { onToggleDone(it.task_id, it.done); }} />
+                            <span className="cal-due-title">{it.title}</span>
+                            <span className="cal-due-time num">{clock_ampm(it.end_min)}</span>
+                        </div>
+                    }
                 }}
             </div>
         }}
@@ -199,7 +219,7 @@ def:pub WeekGrid(
                  onDragOver={lambda (e: any) { drag_over(e, d.date); }}
                  onDrop={lambda (e: any) { drop(e, d.date); }}>
                 {for it in d.items {
-                    if not it.all_day {
+                    if in_grid(it) {
                         (s, e) = span(it);
                         (lane, count) = day_lanes[d.date][it.id];
                         <div key={it.id}

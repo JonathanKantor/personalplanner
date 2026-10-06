@@ -248,16 +248,28 @@ Mon 13:30-15:30  Problem set 4   Free 1:30pm-6pm Monday, due Tuesday 11pm, high 
 NOT PLACED  Rewrite thesis: Only 165 of 900 min fit before Tuesday 12pm: the 240-min daily focus limit is reached
 ```
 
-How it works (`core/scheduler.jac`, deterministic, 24 tests):
+How it works (`core/scheduler.jac`, deterministic, 28 tests). The web button and
+the assistant plan 3 weeks ahead (`suggest_schedule(days=21)`):
 
 1. **Free time** = working hours on working days − calendar events − accepted
    blocks, keeping the minimum break around each. All-day events don't block.
 2. **Order**: earliest due date, then higher priority, then shorter task.
-3. **Placement**: earliest free time before the deadline, trying your
-   preferred study window first each day. Sessions are 30–120 min (long tasks
-   are split), and the daily focus cap is never exceeded.
-4. **Can't fit**: the part that fits is still suggested; the rest is reported
-   with the reason (deadline passed, daily cap, or no free time).
+3. **Work window**: each task is worked on close to its deadline, from the
+   Monday of its due week (or 3 days before the due date, if earlier, so a
+   Monday deadline can use the weekend) up to the deadline. Inside it: the
+   earliest free time, your preferred study window first each day. Sessions
+   are 30–120 min (long tasks are split), and the daily focus cap is never
+   exceeded.
+4. **Overflow**: if the window is full, the rest goes into the days just
+   before it, nearest first (the block's reason says "earlier than its due
+   week"). Tasks whose window hasn't started yet are left for a later plan.
+5. **Can't fit**: the part that fits is still suggested; the rest is reported
+   with the reason (deadline passed, daily cap, or no free time). On the web,
+   that list drops tasks you finish, delete or fully plan.
+
+Deadlines are moments, not time: in the week grid a deadline is a short
+marker at its due time, and ones due outside the visible hours (e.g. 11:59pm)
+are listed under the day's date.
 
 Then `accept_block`, `reject_block`, `adjust_block(id, start, end)` (also
 accepts; refuses clashes), or `accept_all`. Re-planning never moves accepted

@@ -70,6 +70,14 @@ def:pub clock12(minutes: int) -> str {
     return str(12 if h == 0 else h) + ":" + ("0" if m < 10 else "") + str(m);
 }
 
+"""A clock time with am/pm: 1439 -> "11:59pm", 540 -> "9am"."""
+def:pub clock_ampm(minutes: int) -> str {
+    h = (minutes // 60) % 24;
+    m = minutes % 60;
+    hour = str(12 if h % 12 == 0 else h % 12);
+    return hour + ((":" + ("0" if m < 10 else "") + str(m)) if m else "") + ("am" if h < 12 else "pm");
+}
+
 """A time range like the calendar shows it: "10:30 – 11:30"."""
 def:pub time_range(start_min: int, end_min: int) -> str {
     return clock12(start_min) + " – " + clock12(end_min);

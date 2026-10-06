@@ -8,10 +8,15 @@ Algorithm
    accepted blocks (each padded by the minimum break), clipped to the window.
 2. Tasks are placed one at a time, most urgent first: earliest due date, then
    higher priority, then shorter duration (so small tasks aren't crowded out).
-3. Each task takes the earliest free time before its deadline - on each day,
-   the preferred study window first - in sessions of 30 to 120 minutes, never
-   exceeding the daily focus cap.
-4. Whatever doesn't fit is reported with the reason.
+3. Each task is worked on close to its deadline: in its "work window", from
+   the start of its due week (Monday), or LEAD_DAYS before the due date if
+   that's earlier, up to the deadline. Inside the window it takes the earliest
+   free time - on each day, the preferred study window first - in sessions of
+   30 to 120 minutes, never exceeding the daily focus cap.
+4. If the window is full, the rest goes into the days just before it, nearest
+   first (the block's reason says so).
+5. Tasks whose window starts after the planning window are left for later;
+   whatever else doesn't fit is reported with the reason.
 """
 
 import from datetime { datetime, date, time, timedelta }
@@ -19,6 +24,7 @@ import from core.timeutil { zone, parse_hhmm }
 
 glob MIN_SESSION: int = 30,          # never suggest a block shorter than this...
      MAX_SESSION: int = 120,         # ...or longer than this
+     LEAD_DAYS: int = 3,             # work window starts at least this many days before due
      DAY_CODES: list[str] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
      PRIORITY_RANK: dict[str, int] = {"high": 0, "medium": 1, "low": 2};
 
@@ -182,7 +188,7 @@ def day_name(dt: datetime) -> str {
     return dt.strftime("%A");
 }
 
-def _reason(free: Interval, due: datetime, priority: str, session: int, total: int, tz: str) -> str {
+def _reason(free: Interval, due: datetime, priority: str, session: int, total: int, tz: str, early: bool = False) -> str {
     z = zone(tz);
     fs = free.start.astimezone(z);
     fe = free.end.astimezone(z);
@@ -190,6 +196,9 @@ def _reason(free: Interval, due: datetime, priority: str, session: int, total: i
     text = f"Free {clock(fs)}-{clock(fe)} {day_name(fs)}, due {day_name(d)} {clock(d)}, {priority} priority";
     if total > 1 {
         text += f" (session {session} of {total})";
+    }
+    if early {
+        text += "; earlier than its due week because that week is full";
     }
     return text;
 }
@@ -200,6 +209,32 @@ def _reason(free: Interval, due: datetime, priority: str, session: int, total: i
 Title and id break any remaining ties so the result never depends on input order."""
 def task_order(t: SchedTask) -> tuple {
     return (t.due, PRIORITY_RANK.get(t.priority, 1), t.minutes, t.title, t.id);
+}
+
+"""Start of a task's work window: midnight on the Monday of its due week, or
+LEAD_DAYS before the due date if that's earlier (so a Monday deadline can use
+the weekend before)."""
+def work_from(due: datetime, tz_name: str) -> datetime {
+    tz = zone(tz_name);
+    day = due.astimezone(tz).date();
+    monday = day - timedelta(days=day.weekday());
+    first = min(monday, day - timedelta(days=LEAD_DAYS));
+    return datetime.combine(first, time(0, 0), tzinfo=tz);
+}
+
+"""Free time ordered day by day, latest day first (each day's own order
+kept): used for overflow before the work window, nearest to it first."""
+def latest_days_first(pieces: list[Interval], tz_name: str) -> list[Interval] {
+    tz = zone(tz_name);
+    by_day: dict[date, list[Interval]] = {};
+    for s in pieces {
+        by_day.setdefault(s.start.astimezone(tz).date(), []).append(s);
+    }
+    out: list[Interval] = [];
+    for day in sorted(by_day.keys(), reverse=True) {
+        out += by_day[day];
+    }
+    return out;
 }
 
 """Length of the next session for a task with `remaining` minutes when
@@ -244,6 +279,10 @@ def plan(
             ));
             continue;
         }
+        start_from = work_from(t.due, prefs.tz);
+        if start_from >= window.end {
+            continue;                                    # not this task's time yet
+        }
         remaining = t.minutes;
         placed: list[tuple[Interval, Interval]] = [];    # (block, free time it came from)
         while remaining > 0 {
@@ -252,7 +291,12 @@ def plan(
             usable = subtract(
                 [s for s in free if s.start < t.due], t.avoid + [Interval(start=t.due, end=window.end + timedelta(days=1))]
             );
-            for piece in candidate_order(usable, prefs) {
+            # The work window first (earliest first), then the days just
+            # before it (nearest first) if the window is full.
+            near = subtract(usable, [Interval(start=window.start - timedelta(days=1), end=start_from)]);
+            early = subtract(usable, near);
+            options = candidate_order(near, prefs) + latest_days_first(candidate_order(early, prefs), prefs.tz);
+            for piece in options {
                 day = piece.start.astimezone(tz).date();
                 room = min(piece.minutes(), prefs.max_focus_minutes_per_day - used.get(day, 0));
                 length = session_length(remaining, room);
@@ -281,7 +325,7 @@ def plan(
             result.placements.append(Placement(
                 task_id=t.id, title=t.title, start=block.start, end=block.end,
                 session=i + 1, sessions_total=total,
-                reason=_reason(piece, t.due, t.priority, i + 1, total, prefs.tz)
+                reason=_reason(piece, t.due, t.priority, i + 1, total, prefs.tz, block.start < start_from)
             ));
         }
         if remaining > 0 {
