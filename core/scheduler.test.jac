@@ -109,17 +109,24 @@ test "same due date: higher priority first, then shorter" {
     assert [x.task_id for x in p.placements] == ["short-high", "long-high", "low"];
 }
 
-test "long tasks are split into sessions of at most 120 minutes" {
-    p = plan([task("project", 300, at(4, "17:00"))], prefs(), [], {}, week());
-    lengths = [x.end - x.start for x in p.placements];
-    assert sum([l.total_seconds() for l in lengths]) == 300 * 60;
-    assert all(l <= timedelta(minutes=120) and l >= timedelta(minutes=30) for l in lengths);
-    assert [x.session for x in p.placements] == [1, 2, 3];
-    assert all(x.sessions_total == 3 for x in p.placements);
+test "back-to-back sessions of one task are joined into one block" {
+    # 300 min with a free day: sessions 120 + 120 + 60 sit next to each
+    # other, so they're shown as one 5-hour block (same task, same name).
+    p = plan([task("project", 300, at(4, "17:00"))], prefs(min_break_minutes=15), [], {}, week());
+    assert hours([Interval(start=x.start, end=x.end) for x in p.placements]) == ["Mon 09:00-14:00"], p.placements;
+    assert p.placements[0].session == 1 and p.placements[0].sessions_total == 1;
+    assert "session" not in p.placements[0].reason;
+}
+
+test "sessions are still split where free time is broken" {
+    p = plan([task("project", 180, at(4, "17:00"))], prefs(), [iv(0, "11:00", "12:00")], {}, week());
+    assert hours([Interval(start=x.start, end=x.end) for x in p.placements]) == ["Mon 09:00-11:00", "Mon 12:00-13:00"], p.placements;
+    assert [x.session for x in p.placements] == [1, 2];
 }
 
 test "splitting never leaves a stub shorter than 30 minutes" {
-    p = plan([task("t", 130, at(4, "17:00"))], prefs(), [], {}, week());
+    # 130 min, 2 free hours before an 11:00 class: 100 + 30 (not 120 + 10).
+    p = plan([task("t", 130, at(4, "17:00"))], prefs(), [iv(0, "11:00", "12:00")], {}, week());
     minutes = [int((x.end - x.start).total_seconds() // 60) for x in p.placements];
     assert minutes == [100, 30], minutes;
 }

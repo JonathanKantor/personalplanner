@@ -15,7 +15,10 @@ Algorithm
    30 to 120 minutes, never exceeding the daily focus cap.
 4. If the window is full, the rest goes into the days just before it, nearest
    first (the block's reason says so).
-5. Tasks whose window starts after the planning window are left for later;
+5. Back-to-back sessions of one task (only a break apart) are joined into
+   one continuous block, so the calendar never shows the same task twice in
+   a row.
+6. Tasks whose window starts after the planning window are left for later;
    whatever else doesn't fit is reported with the reason.
 """
 
@@ -237,6 +240,24 @@ def latest_days_first(pieces: list[Interval], tz_name: str) -> list[Interval] {
     return out;
 }
 
+"""Join back-to-back sessions of one task (at most `gap` apart, in time
+order) into one continuous block of the same total length. Each pair is
+(block, free time it came from); a joined block keeps the first one's."""
+def join_sessions(placed: list[tuple[Interval, Interval]], gap: timedelta) -> list[tuple[Interval, Interval]] {
+    out: list[tuple[Interval, Interval]] = [];
+    prev_end: datetime | None = None;        # where the previous session really ended
+    for (block, piece) in placed {
+        if out and prev_end is not None and block.start - prev_end <= gap {
+            (last, first_piece) = out[-1];
+            out[-1] = (Interval(start=last.start, end=last.end + (block.end - block.start)), first_piece);
+        } else {
+            out.append((block, piece));
+        }
+        prev_end = block.end;
+    }
+    return out;
+}
+
 """Length of the next session for a task with `remaining` minutes when
 `room` minutes are available, or 0 if it shouldn't go here."""
 def session_length(remaining: int, room: int) -> int {
@@ -320,6 +341,7 @@ def plan(
         # Number sessions in time order (the preferred window is filled first,
         # so placement order can differ from clock order).
         placed.sort(key=lambda (pair: tuple[Interval, Interval]) { pair[0].start; });
+        placed = join_sessions(placed, gap);
         total = len(placed);
         for (i, (block, piece)) in enumerate(placed) {
             result.placements.append(Placement(

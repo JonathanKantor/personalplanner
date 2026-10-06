@@ -13,7 +13,7 @@ import from core.calendars { events_between }
 import from core.changes { as_int }
 import from core.planner {
     _tasks, _blocks, _minutes, _view, _find_block, _update_task_status, _replan,
-    _range, _agenda
+    _range, _agenda, _merge_adjacent
 }
 
 glob MAX_DAYS: int = 28;
@@ -52,6 +52,10 @@ def:protect list_blocks(start: str = "", days: int = 7, status: str = "") -> lis
 def:protect accept_block(id: str) -> BlockView {
     (t, b) = _find_block(id);
     b.status = BlockStatus.ACCEPTED;
+    merged = _merge_adjacent(t, b);         # joins a planned block right next to it
+    if merged {
+        b = merged;
+    }
     _update_task_status(t);
     return _view(t, b);
 }
@@ -81,11 +85,16 @@ def:protect clear_suggestions -> int {
 def:protect accept_all -> list[BlockView] {
     out: list[BlockView] = [];
     for t in _tasks() {
+        changed = False;
         for b in _blocks(t) {
             if b.status == BlockStatus.SUGGESTED {
                 b.status = BlockStatus.ACCEPTED;
-                out.append(_view(t, b));
+                changed = True;
             }
+        }
+        if changed {
+            _merge_adjacent(t);
+            out += [_view(t, b) for b in _blocks(t) if b.status == BlockStatus.ACCEPTED];
         }
         _update_task_status(t);
     }
@@ -121,6 +130,10 @@ def:protect adjust_block(id: str, start: str, end: str) -> BlockView {
     b.end = to_iso(e);
     b.status = BlockStatus.ACCEPTED;
     b.reason = "Adjusted by you";
+    merged = _merge_adjacent(t, b);         # dropped right next to its own planned block
+    if merged {
+        b = merged;
+    }
     _update_task_status(t);
     return _view(t, b);
 }

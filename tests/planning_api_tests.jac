@@ -166,6 +166,25 @@ test "adjusting a block checks for clashes and accepts it" {
     }
 }
 
+test "planned blocks of one task that end up back to back are merged" {
+    client = _client();
+    try {
+        client.register_user("planner_merge", "password123");
+        task = _call(client, "create_task", {"title": "Essay", "due": _due(6), "estimated_minutes": 120});
+        day = _due(3)[0:10];
+        first = _call(client, "suggest_schedule")["suggestions"][0];
+        _call(client, "adjust_block", {"id": first["id"], "start": day + "T10:00", "end": day + "T11:00"});
+        second = [b for b in _call(client, "suggest_schedule")["suggestions"] if b["task_id"] == task["id"]][0];
+        merged = _call(client, "adjust_block", {"id": second["id"], "start": day + "T11:00", "end": day + "T12:00"});
+        local = lambda (iso: str) { _t(iso).astimezone(ZoneInfo(TZ)).strftime("%H:%M"); };
+        assert (local(merged["start"]), local(merged["end"])) == ("10:00", "12:00"), merged;
+        planned = [b for b in _call(client, "list_blocks", {"start": "", "days": 14, "status": "accepted"}) if b["task_id"] == task["id"]];
+        assert len(planned) == 1, planned;
+    } finally {
+        client.close();
+    }
+}
+
 test "recurring tasks get an instance per occurrence" {
     client = _client();
     try {

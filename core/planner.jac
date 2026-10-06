@@ -12,6 +12,7 @@ endpoints, and other server modules (tasks, preferences, views) import the
 engine from here rather than from an endpoint module.
 """
 
+import re;
 import from datetime { datetime, date, timedelta }
 import from core.models {
     Task, TaskStatus, TimeBlock, BlockStatus, ScheduledAs, Preferences,
@@ -105,6 +106,35 @@ def _update_task_status(t: Task) -> None {
     }
     accepted = sum([_minutes(b) for b in _blocks(t) if b.status == BlockStatus.ACCEPTED]);
     t.status = TaskStatus.SCHEDULED if accepted >= t.estimated_minutes else TaskStatus.TODO;
+}
+
+"""Merge back-to-back blocks of one task with the same status (planned with
+planned, suggested with suggested) when they touch or are at most the minimum
+break apart: the earlier block grows to cover both and the later one is
+removed. Returns the block that now holds `keep` (it may have been merged
+into the earlier one), so callers can report it."""
+def _merge_adjacent(t: Task, keep: TimeBlock | None = None) -> TimeBlock | None {
+    gap = timedelta(minutes=_prefs().min_break_minutes);
+    result = keep;
+    for status in [BlockStatus.ACCEPTED, BlockStatus.SUGGESTED] {
+        same = sorted([b for b in _blocks(t) if b.status == status], key=lambda (b: TimeBlock) { from_iso(b.start); });
+        prev: TimeBlock | None = None;
+        for b in same {
+            if prev is not None and from_iso(b.start) - from_iso(prev.end) <= gap {
+                if from_iso(b.end) > from_iso(prev.end) {
+                    prev.end = b.end;
+                }
+                prev.reason = re.sub(r" \(session \d+ of \d+\)", "", prev.reason);
+                if result is b {
+                    result = prev;
+                }
+                del b;
+            } else {
+                prev = b;
+            }
+        }
+    }
+    return result;
 }
 
 """Run the scheduler and store its suggestions. Used by suggest_schedule and

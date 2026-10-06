@@ -248,7 +248,7 @@ Mon 13:30-15:30  Problem set 4   Free 1:30pm-6pm Monday, due Tuesday 11pm, high 
 NOT PLACED  Rewrite thesis: Only 165 of 900 min fit before Tuesday 12pm: the 240-min daily focus limit is reached
 ```
 
-How it works (`core/scheduler.jac`, deterministic, 28 tests). The web button and
+How it works (`core/scheduler.jac`, deterministic, 29 tests). The web button and
 the assistant plan 3 weeks ahead (`suggest_schedule(days=21)`):
 
 1. **Free time** = working hours on working days − calendar events − accepted
@@ -263,7 +263,11 @@ the assistant plan 3 weeks ahead (`suggest_schedule(days=21)`):
 4. **Overflow**: if the window is full, the rest goes into the days just
    before it, nearest first (the block's reason says "earlier than its due
    week"). Tasks whose window hasn't started yet are left for a later plan.
-5. **Can't fit**: the part that fits is still suggested; the rest is reported
+5. **One block per stretch**: back-to-back sessions of a task (only a break
+   apart) are joined into one continuous block; sessions are only split where
+   something else is in between. Planned blocks of one task that end up next
+   to each other (accept, accept all, drag) are merged the same way.
+6. **Can't fit**: the part that fits is still suggested; the rest is reported
    with the reason (deadline passed, daily cap, or no free time). On the web,
    that list drops tasks you finish, delete or fully plan.
 
